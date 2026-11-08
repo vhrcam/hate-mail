@@ -32,7 +32,6 @@ type Account = {
 }
 
 type Scan = { email: string; scanned: number; total: number; first: boolean }
-type Confirm = { title: string; body: string; label: string; run: () => void }
 type Filter = 'all' | 'unopened' | 'oneclick'
 
 const sorts = { most: 'Most emails', oldest: 'Oldest first', newest: 'Newest first', az: 'A–Z' }
@@ -72,8 +71,6 @@ export default function Dashboard() {
   const [busy, setBusy] = useState<Set<number>>(new Set())
   const [scan, setScan] = useState<Scan | null>(null)
   const [toast, setToast] = useState('')
-  const [confirm, setConfirm] = useState<Confirm | null>(null)
-  const [menu, setMenu] = useState<number | null>(null)
 
   const load = useCallback(
     async (resetBottom: boolean) => {
@@ -235,36 +232,6 @@ export default function Dashboard() {
           ? `Unsubscribed from ${done}. ${left} need${left === 1 ? 's' : ''} you to finish on their website (marked with ↗).`
           : `Unsubscribed from ${done} sender${done === 1 ? '' : 's'}.`,
       )
-      setSelected(new Set())
-    } finally {
-      track(ids, false)
-    }
-  }
-
-  function askClean(ids: number[], action: 'trash' | 'archive') {
-    setMenu(null)
-    const picked = senders.filter((s) => ids.includes(s.id))
-    const who = picked.length === 1 ? picked[0].name : `${picked.length} senders`
-    setConfirm({
-      title: action === 'trash' ? `Move all emails from ${who} to Trash?` : `Archive all emails from ${who}?`,
-      body:
-        action === 'trash'
-          ? 'They go to your Trash folder. Most providers delete Trash for good after 30 days.'
-          : 'They leave your inbox but stay in your account.',
-      label: action === 'trash' ? 'Move to Trash' : 'Archive',
-      run: () => clean(ids, action),
-    })
-  }
-
-  async function clean(ids: number[], action: 'trash' | 'archive') {
-    setConfirm(null)
-    track(ids, true)
-    try {
-      const { ok, data } = await post('/api/senders/clean', { ids, action })
-      if (!ok) return setToast(data.error ?? 'Something went wrong.')
-      const verb = action === 'trash' ? 'Moved' : 'Archived'
-      const count = `${data.moved.toLocaleString()} email${data.moved === 1 ? '' : 's'}`
-      setToast(data.errors.length ? `${verb} ${count}. Some didn’t work: ${data.errors.join('; ')}` : `${verb} ${count}${action === 'trash' ? ' to Trash' : ''}.`)
       setSelected(new Set())
     } finally {
       track(ids, false)
@@ -450,25 +417,6 @@ export default function Dashboard() {
                   )}
                 </div>
 
-                <div className="relative shrink-0">
-                  <button
-                    onClick={() => setMenu(menu === s.id ? null : s.id)}
-                    aria-label={`More actions for ${s.name}`}
-                    className="rounded-lg px-2 py-1 text-lg leading-none text-muted hover:bg-navy-700 hover:text-ink"
-                  >
-                    ⋯
-                  </button>
-                  {menu === s.id && (
-                    <div className="absolute right-0 top-full z-30 mt-1 w-60 overflow-hidden rounded-lg border border-navy-700 bg-navy-950 py-1 text-sm shadow-xl">
-                      <button onClick={() => askClean([s.id], 'archive')} className="block w-full px-3 py-2 text-left hover:bg-navy-700">
-                        Archive all their emails
-                      </button>
-                      <button onClick={() => askClean([s.id], 'trash')} className="block w-full px-3 py-2 text-left text-coral-soft hover:bg-navy-700">
-                        Move all their emails to Trash
-                      </button>
-                    </div>
-                  )}
-                </div>
               </li>
             )
           })}
@@ -481,20 +429,12 @@ export default function Dashboard() {
         {senders.length > 0 && !visible.length && <p className="py-16 text-center text-muted">Nothing matches.</p>}
       </main>
 
-      {menu !== null && <div className="fixed inset-0 z-20" onClick={() => setMenu(null)} />}
-
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-30 px-4">
           <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 rounded-2xl border border-navy-600 bg-navy-950/95 px-4 py-3 shadow-2xl backdrop-blur">
             <span className="mr-auto text-sm font-medium">{selected.size} selected</span>
             <button onClick={unsubscribeSelected} className="rounded-full bg-coral px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-coral-soft">
               Unsubscribe
-            </button>
-            <button onClick={() => askClean([...selected], 'archive')} className="btn-quiet rounded-full py-1.5">
-              Archive emails
-            </button>
-            <button onClick={() => askClean([...selected], 'trash')} className="btn-quiet rounded-full py-1.5">
-              Trash emails
             </button>
             <button onClick={() => setSelected(new Set())} className="px-2 text-sm text-muted hover:text-ink">
               Clear
@@ -509,25 +449,7 @@ export default function Dashboard() {
             {toast}
           </p>
         </div>
-      )}
-
-      {confirm && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setConfirm(null)}>
-          <div role="dialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-navy-700 bg-navy-900 p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold">{confirm.title}</h2>
-            <p className="mt-2 text-sm text-muted">{confirm.body}</p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setConfirm(null)} className="btn-quiet">
-                Cancel
-              </button>
-              <button onClick={confirm.run} autoFocus className="btn-primary py-2 text-sm">
-                {confirm.label}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-    </div>
+      )}    </div>
   )
 }
 

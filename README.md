@@ -10,7 +10,6 @@ After years of using one email address, it ends up on hundreds of lists. Hate Ma
 - **Reads headers only:** it looks at who sent each email and when, never what the email says.
 - **Lists every sender** with their logo, how many emails they send a month, and when their first email arrived ("Since Mar 2016").
 - **Unsubscribes in one click**, or select a batch of senders and unsubscribe from all of them at once.
-- **Archives or trashes** everything a sender already sent.
 - **Flags "Still sending"** when a sender keeps emailing more than 14 days after you unsubscribed.
 - **Sort and filter:** most emails, oldest, newest, A–Z, "Not opened in a year", "One-click", search, or a single account.
 
@@ -66,6 +65,7 @@ Some school and work accounts block outside apps until an admin approves them.
 - **Scanning:** it scans every mail folder except Sent, Drafts, Trash and Spam (on Gmail, just All Mail), 500 emails at a time. Later scans only check new mail.
 - **What counts as a mailing list:** only email with a `List-Unsubscribe`, `List-Id` or bulk `Precedence` header. Personal email is ignored.
 - **What gets saved:** sender names and addresses, email counts per month, and each sender's latest unsubscribe link. Subjects and message text are never saved. Passwords and sign-in tokens are encrypted with AES-256-GCM.
+- **Your mailbox stays as it is:** folders are opened read-only, so nothing gets moved, marked as read or deleted. The only thing Hate Mail does in your account is send an unsubscribe email when a sender asks for one.
 - **How it unsubscribes,** best option first:
   1. One-click unsubscribe (RFC 8058).
   2. An unsubscribe email sent from your account.

@@ -37,8 +37,6 @@ const skipNames = /^(sent|sent items|sent mail|sent messages|drafts?|trash|bin|d
 export async function mailFolders(client: ImapFlow) {
   const list = await client.list()
   const all = list.find((f) => f.specialUse === '\\All')
-  const trash = list.find((f) => f.specialUse === '\\Trash') ?? list.find((f) => /^(trash|bin|deleted items|deleted messages)$/i.test(f.name))
-  const archive = list.find((f) => f.specialUse === '\\Archive') ?? list.find((f) => /^archive$/i.test(f.name))
   const scan = all
     ? [all.path]
     : list
@@ -46,7 +44,7 @@ export async function mailFolders(client: ImapFlow) {
         .filter((f) => !f.specialUse || f.specialUse === '\\Inbox' || f.specialUse === '\\Archive')
         .filter((f) => !skipNames.test(f.name))
         .map((f) => f.path)
-  return { all: all?.path, trash: trash?.path, archive: archive?.path, scan }
+  return { scan }
 }
 
 export async function sendMail(account: Account, message: { to: string; subject: string; text: string }) {
