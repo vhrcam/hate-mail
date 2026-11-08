@@ -8,7 +8,7 @@ import { mergeMonths, monthKey, type Months } from './stats'
 const HEADERS = ['list-unsubscribe', 'list-unsubscribe-post', 'list-id', 'precedence']
 const BATCH = 500
 
-type State = { folders: Record<string, { v: string; uid: number }>; scanned: number }
+type State = { folders: Record<string, { v: string; uid: number; skip?: number[] }>; scanned: number }
 
 type Found = {
   name: string
@@ -59,7 +59,10 @@ async function scan(account: Account, deadline: number): Promise<{ done: boolean
           break
         }
         const folder = (state.folders[path] ??= { v: validity, uid: 0 })
-        const uids = ((await client.search({ uid: `${folder.uid + 1}:*` }, { uid: true })) || []).filter((u) => u > folder.uid).sort((a, b) => a - b)
+        const skip = new Set(folder.skip ?? [])
+        const uids = ((await client.search({ uid: `${folder.uid + 1}:*` }, { uid: true })) || [])
+          .filter((u) => u > folder.uid && !skip.has(u))
+          .sort((a, b) => a - b)
 
         let i = 0
         while (i < uids.length && (Date.now() < deadline || !progressed)) {
@@ -71,9 +74,14 @@ async function scan(account: Account, deadline: number): Promise<{ done: boolean
             collect(found, message, path, own)
           }
           folder.uid = batch[batch.length - 1]
+          folder.skip = folder.skip?.filter((u) => u > folder.uid)
           state.scanned += batch.length
           save(account, found, state)
           i += batch.length
+        }
+        if (i === uids.length && folder.skip?.length) {
+          folder.uid = Math.max(folder.uid, ...folder.skip)
+          folder.skip = []
         }
         remaining += uids.length - i
       } finally {
