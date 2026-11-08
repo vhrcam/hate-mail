@@ -79,7 +79,7 @@ export default function ConnectFlow({ hasAccounts, initialEmail, error }: { hasA
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-2xl border border-navy-700 bg-navy-900 p-7">
         <h1 className="text-2xl font-bold">Connect your email</h1>
-        <p className="mt-1 text-sm text-muted">Hate Mail looks at who your emails are from, never what they say.</p>
+        <p className="mt-1 text-sm text-muted">Hate Mail looks at who your emails are from and never saves what they say.</p>
 
         {!info && (
           <form onSubmit={lookup} className="mt-6">
