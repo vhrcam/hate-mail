@@ -1,6 +1,6 @@
 # Hate Mail
 
-A web app that finds every mailing list sending you email and lets you unsubscribe from the ones you don't want. Navy and dark blue, with each sender in its own box.
+A web app that finds every mailing list sending you email and lets you unsubscribe from the ones you don't want.
 
 Most people have used the same email address for ten years or more, and in that time it lands on hundreds of lists: stores you bought from once, apps you tried, newsletters you never read. Unsubscribing one email at a time never keeps up. Hate Mail connects to your mailbox, finds everyone sending you bulk email, and lists them in one place, with the date their first email arrived and an unsubscribe button on each one.
 
