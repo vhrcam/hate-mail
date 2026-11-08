@@ -1,26 +1,40 @@
 @import "tailwindcss";
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+@theme {
+  --color-navy-950: #060e24;
+  --color-navy-900: #0a1533;
+  --color-navy-850: #0c1a3d;
+  --color-navy-800: #0f1f47;
+  --color-navy-700: #1a2c5c;
+  --color-navy-600: #26407d;
+  --color-ink: #e8eeff;
+  --color-muted: #8d9cc7;
+  --color-faint: #5d6c96;
+  --color-coral: #ff5a6e;
+  --color-coral-soft: #ff8a98;
+  --color-amber: #f5b44a;
+  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
-}
-
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--color-navy-800);
+  color: var(--color-ink);
+}
+
+@layer components {
+  .input {
+    @apply w-full rounded-lg border border-navy-700 bg-navy-950 px-3 py-2.5 text-ink outline-none placeholder:text-faint focus:border-navy-600;
+  }
+
+  .btn-primary {
+    @apply rounded-lg bg-coral px-4 py-2.5 font-semibold text-white transition hover:bg-coral-soft disabled:opacity-50;
+  }
+
+  .btn-quiet {
+    @apply rounded-lg border border-navy-700 px-3 py-2 text-sm text-ink transition hover:bg-navy-700 disabled:opacity-50;
+  }
 }
