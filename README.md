@@ -4,8 +4,6 @@ A web app that finds every mailing list sending you email and lets you unsubscri
 
 Most people have used the same email address for ten years or more, and in that time it lands on hundreds of lists: stores you bought from once, apps you tried, newsletters you never read. Unsubscribing one email at a time never keeps up. Hate Mail connects to your mailbox, finds everyone sending you bulk email, and lists them in one place, with the date their first email arrived and an unsubscribe button on each one.
 
-![Hate Mail's sender list, with each mailing list in a dark box showing its logo or first letter, its address, how many emails it sends a month, when its first email arrived, and an Unsubscribe button on the right](docs/senders.png)
-
 ## Sign in
 
 There's no Hate Mail password. Connecting your email signs you in, and you stay signed in on that browser.
@@ -16,8 +14,6 @@ There's no Hate Mail password. Connecting your email signs you in, and you stay 
 - **Proton Mail** can't connect. Proton only lets other apps in through Proton Bridge, a desktop app.
 
 The menu at the top right shows the account you're looking at. Open it to switch to another one, add another account, or sign out of the one you're on. Signing out makes Hate Mail forget that account and its senders on that browser. Nothing in your mailbox changes.
-
-<img src="docs/connect.png" width="380" alt="The connect screen for an iCloud address, with numbered steps for making an app-specific password, a link to Apple's settings, and the app password box">
 
 ## What it does
 
@@ -38,8 +34,6 @@ The menu at the top right shows the account you're looking at. Open it to switch
 - **Unsubscribed senders** dim in place, so the list doesn't jump while you work down it. They move to the bottom the next time you open Hate Mail.
 - **Scanning.** The first scan goes through all of your mail, 500 emails at a time, with a progress bar. After that, Hate Mail only checks new mail. It checks when you open it (if the last check was over 15 minutes ago) and when you press Refresh.
 - **Works on phones.** The boxes stack and the button moves under each sender.
-
-<img src="docs/phone.png" width="260" alt="Hate Mail on a phone, with each sender's details stacked and the Unsubscribe button underneath">
 
 ## Good to know
 
