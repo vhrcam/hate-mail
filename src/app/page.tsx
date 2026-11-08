@@ -1,6 +1,8 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
 import { currentUser } from '@/lib/auth'
+import { countAccounts } from '@/lib/accounts'
+import Dashboard from '@/components/Dashboard'
 
 export default function Home() {
   return (
@@ -13,5 +15,6 @@ export default function Home() {
 async function Gate() {
   const user = await currentUser()
   if (!user) redirect('/login')
-  return <main className="p-8">Signed in as {user.email}</main>
+  if (!countAccounts(user.id)) redirect('/connect')
+  return <Dashboard />
 }
