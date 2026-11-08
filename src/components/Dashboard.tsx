@@ -2,7 +2,7 @@
 
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 
 type Sender = {
   id: number
@@ -15,8 +15,7 @@ type Sender = {
   perMonth: number
   lastYear: number
   notOpenedYear: boolean
-  accounts: { id: number; label: string }[]
-  status: 'subscribed' | 'partial' | 'unsubscribed' | 'still-sending'
+  status: 'subscribed' | 'unsubscribed' | 'still-sending'
   method: 'auto' | 'link' | 'find' | null
   link: string | null
 }
@@ -26,12 +25,12 @@ type Account = {
   email: string
   provider: string
   oauth: boolean
-  label: string
   scannedAt: number | null
   needsReconnect: boolean
 }
 
-type Scan = { email: string; scanned: number; total: number; first: boolean }
+type Loaded = { account: number; accounts: Account[]; senders: Sender[] }
+type Scan = { scanned: number; total: number; first: boolean }
 type Filter = 'all' | 'unopened' | 'oneclick'
 
 const sorts = { most: 'Most emails', oldest: 'Oldest first', newest: 'Newest first', az: 'A–Z' }
@@ -41,6 +40,7 @@ const chips: [Filter, string][] = [
   ['oneclick', 'One-click'],
 ]
 const colors = ['#3b6fd8', '#7c5cd6', '#c2549a', '#d07a2d', '#2f9e75', '#2a94b8', '#c94a5a', '#5b67d8']
+const STALE = 15 * 60 * 1000
 
 const monthYear = (time: number) => new Date(time).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
 const sleep = (ms: number) => new Promise((resolve) => setTimeout(resolve, ms))
@@ -57,45 +57,52 @@ async function post(url: string, body: object) {
   return { ok: res.ok, data: await res.json().catch(() => ({})) }
 }
 
-export default function Dashboard() {
+export default function Dashboard({ initialAccount }: { initialAccount: number }) {
   const router = useRouter()
-  const [senders, setSenders] = useState<Sender[]>([])
   const [accounts, setAccounts] = useState<Account[]>([])
+  const [current, setCurrent] = useState(0)
+  const [senders, setSenders] = useState<Sender[]>([])
   const [loaded, setLoaded] = useState(false)
   const [bottom, setBottom] = useState<Set<number>>(new Set())
   const [sort, setSort] = useState<keyof typeof sorts>('most')
   const [filter, setFilter] = useState<Filter>('all')
-  const [account, setAccount] = useState(0)
   const [query, setQuery] = useState('')
   const [selected, setSelected] = useState<Set<number>>(new Set())
   const [busy, setBusy] = useState<Set<number>>(new Set())
   const [scan, setScan] = useState<Scan | null>(null)
   const [toast, setToast] = useState('')
+  const [switcher, setSwitcher] = useState(false)
+  const [leaving, setLeaving] = useState(false)
+  const run = useRef(0)
+
+  const account = accounts.find((a) => a.id === current)
 
   const load = useCallback(
-    async (resetBottom: boolean) => {
-      const res = await fetch('/api/senders')
+    async (id: number, fresh: boolean) => {
+      const res = await fetch(`/api/senders?account=${id}`)
       if (res.status === 401) {
-        router.replace('/login')
+        router.replace('/connect')
         return null
       }
-      const data = await res.json()
-      if (!data.accounts.length) router.replace('/connect')
-      setSenders(data.senders)
+      const data: Loaded = await res.json()
+      if (fresh) setBottom(new Set(data.senders.filter((s) => s.status === 'unsubscribed').map((s) => s.id)))
       setAccounts(data.accounts)
+      setCurrent(data.account)
+      setSenders(data.senders)
       setLoaded(true)
-      if (resetBottom) setBottom(new Set(data.senders.filter((s: Sender) => s.status === 'unsubscribed').map((s: Sender) => s.id)))
-      return data as { senders: Sender[]; accounts: Account[] }
+      return data
     },
     [router],
   )
 
   const runScan = useCallback(
-    async (a: Account, first: boolean, cancelled: () => boolean) => {
-      setScan({ email: a.email, scanned: 0, total: 0, first })
+    async (a: Account, mine: number) => {
+      const first = !a.scannedAt
+      setScan({ scanned: 0, total: 0, first })
       try {
-        while (!cancelled()) {
+        while (run.current === mine) {
           const { ok, data } = await post(`/api/accounts/${a.id}/scan`, {})
+          if (run.current !== mine) break
           if (!ok) {
             setToast(data.reconnect ? `${a.email} needs to be reconnected.` : `Couldn’t scan ${a.email}. ${data.error ?? ''}`)
             break
@@ -104,35 +111,56 @@ export default function Dashboard() {
             await sleep(2000)
             continue
           }
-          setScan({ email: a.email, scanned: data.scanned, total: data.total, first })
+          setScan({ scanned: data.scanned, total: data.total, first })
           if (data.done) break
-          if (first) await load(false)
+          if (first) await load(a.id, false)
         }
       } finally {
-        setScan(null)
-        await load(false)
+        if (run.current === mine) {
+          setScan(null)
+          await load(a.id, false)
+        }
       }
     },
     [load],
   )
 
+  const open = useCallback(
+    async (id: number) => {
+      const mine = ++run.current
+      const data = await load(id, true)
+      if (!data || run.current !== mine) return
+      try {
+        localStorage.setItem('hm-account', String(data.account))
+      } catch {}
+      window.history.replaceState(null, '', `/?account=${data.account}`)
+      const a = data.accounts.find((x) => x.id === data.account)
+      if (a && !a.needsReconnect && (!a.scannedAt || Date.now() - a.scannedAt > STALE)) await runScan(a, mine)
+    },
+    [load, runScan],
+  )
+
   useEffect(() => {
-    let cancelled = false
     async function start() {
-      const data = await load(true)
-      for (const a of data?.accounts ?? []) {
-        if (cancelled) return
-        if (a.needsReconnect) continue
-        const first = !a.scannedAt
-        if (!first && Date.now() - a.scannedAt! < 15 * 60 * 1000) continue
-        await runScan(a, first, () => cancelled)
-      }
+      let saved = 0
+      try {
+        saved = Number(localStorage.getItem('hm-account')) || 0
+      } catch {}
+      await open(initialAccount || saved)
     }
     start()
+    const runs = run
     return () => {
-      cancelled = true
+      runs.current++
     }
-  }, [load, runScan])
+  }, [initialAccount, open])
+
+  function switchTo(id: number) {
+    setScan(null)
+    setSelected(new Set())
+    setSwitcher(false)
+    open(id)
+  }
 
   useEffect(() => {
     if (!toast) return
@@ -152,13 +180,11 @@ export default function Dashboard() {
       .filter((s) => !q || s.name.toLowerCase().includes(q) || s.address.includes(q))
       .filter((s) => filter !== 'unopened' || s.notOpenedYear)
       .filter((s) => filter !== 'oneclick' || s.method === 'auto')
-      .filter((s) => !account || s.accounts.some((a) => a.id === account))
       .sort((a, b) => Number(bottom.has(a.id)) - Number(bottom.has(b.id)) || order[sort](a, b))
-  }, [senders, query, filter, account, sort, bottom])
+  }, [senders, query, filter, sort, bottom])
 
   const selectable = visible.filter((s) => s.status !== 'unsubscribed')
   const allSelected = selectable.length > 0 && selectable.every((s) => selected.has(s.id))
-  const multi = accounts.length > 1
 
   function merge(updated: Sender[]) {
     const byId = new Map(updated.map((s) => [s.id, s]))
@@ -166,8 +192,8 @@ export default function Dashboard() {
   }
 
   function track(ids: number[], on: boolean) {
-    setBusy((current) => {
-      const next = new Set(current)
+    setBusy((now) => {
+      const next = new Set(now)
       for (const id of ids) {
         if (on) next.add(id)
         else next.delete(id)
@@ -177,8 +203,8 @@ export default function Dashboard() {
   }
 
   function toggle(id: number) {
-    setSelected((current) => {
-      const next = new Set(current)
+    setSelected((now) => {
+      const next = new Set(now)
       if (next.has(id)) next.delete(id)
       else next.add(id)
       return next
@@ -209,7 +235,7 @@ export default function Dashboard() {
         if (data.senders) merge(data.senders)
         return
       }
-      const { ok, data } = await post('/api/senders/unsubscribe', { ids: [s.id], opened })
+      const { ok, data } = await post('/api/senders/unsubscribe', { account: current, ids: [s.id], opened })
       if (!ok) return setToast(data.error ?? 'Something went wrong.')
       merge(data.senders)
       if (data.failed?.length) setToast(`${s.name}’s one-click unsubscribe didn’t go through. Click Unsubscribe ↗ to finish on their site.`)
@@ -222,7 +248,7 @@ export default function Dashboard() {
     const ids = [...selected]
     track(ids, true)
     try {
-      const { ok, data } = await post('/api/senders/unsubscribe', { ids })
+      const { ok, data } = await post('/api/senders/unsubscribe', { account: current, ids })
       if (!ok) return setToast(data.error ?? 'Something went wrong.')
       merge(data.senders)
       const left = (data.senders as Sender[]).filter((s) => s.status !== 'unsubscribed').length
@@ -238,16 +264,20 @@ export default function Dashboard() {
     }
   }
 
-  async function refresh() {
-    for (const a of accounts) {
-      if (!a.needsReconnect) await runScan(a, !a.scannedAt, () => false)
-    }
+  function refresh() {
+    if (account) runScan(account, ++run.current)
   }
 
   async function signOut() {
-    await fetch('/api/auth/logout', { method: 'POST' })
-    router.replace('/login')
-    router.refresh()
+    setLeaving(false)
+    const res = await fetch(`/api/accounts/${current}`, { method: 'DELETE' })
+    const data = await res.json().catch(() => ({}))
+    if (!res.ok || !data.left) {
+      router.replace('/connect')
+      router.refresh()
+      return
+    }
+    switchTo(0)
   }
 
   return (
@@ -255,17 +285,47 @@ export default function Dashboard() {
       <header className="border-b border-navy-700">
         <div className="mx-auto max-w-5xl px-4 py-4">
           <div className="flex items-center justify-between gap-3">
-            <h1 className="text-xl font-bold tracking-tight">Hate Mail</h1>
-            <nav className="flex items-center gap-2">
-              <button onClick={refresh} disabled={!!scan} className="btn-quiet">
+            <h1 className="shrink-0 text-xl font-bold tracking-tight">Hate Mail</h1>
+            <nav className="flex min-w-0 items-center gap-2">
+              <button onClick={refresh} disabled={!!scan || !account} className="btn-quiet shrink-0">
                 Refresh
               </button>
-              <Link href="/accounts" className="btn-quiet">
-                Accounts
-              </Link>
-              <button onClick={signOut} className="btn-quiet">
-                Sign out
-              </button>
+              <div className="relative min-w-0">
+                <button
+                  onClick={() => setSwitcher(!switcher)}
+                  aria-expanded={switcher}
+                  className="btn-quiet flex max-w-[15rem] items-center gap-2"
+                >
+                  <span className="truncate">{account?.email ?? 'Accounts'}</span>
+                  <span aria-hidden className="text-muted">
+                    ▾
+                  </span>
+                </button>
+                {switcher && (
+                  <div className="absolute right-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-navy-700 bg-navy-950 py-1 text-sm shadow-2xl">
+                    {accounts.map((a) => (
+                      <button key={a.id} onClick={() => (a.id === current ? setSwitcher(false) : switchTo(a.id))} className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-navy-700">
+                        <span className="w-4 shrink-0 text-coral-soft">{a.id === current ? '✓' : ''}</span>
+                        <span className="min-w-0 flex-1 truncate">{a.email}</span>
+                        {a.needsReconnect && <span className="shrink-0 text-xs text-amber">Reconnect</span>}
+                      </button>
+                    ))}
+                    <div className="my-1 border-t border-navy-700" />
+                    <Link href="/connect" className="block px-3 py-2.5 pl-9 hover:bg-navy-700">
+                      Add another account
+                    </Link>
+                    <button
+                      onClick={() => {
+                        setSwitcher(false)
+                        setLeaving(true)
+                      }}
+                      className="block w-full px-3 py-2.5 pl-9 text-left text-muted hover:bg-navy-700 hover:text-ink"
+                    >
+                      Sign out of this account
+                    </button>
+                  </div>
+                )}
+              </div>
             </nav>
           </div>
 
@@ -284,16 +344,6 @@ export default function Dashboard() {
                 </option>
               ))}
             </select>
-            {multi && (
-              <select value={account} onChange={(e) => setAccount(Number(e.target.value))} aria-label="Account" className="input w-auto max-w-48 py-2">
-                <option value={0}>All accounts</option>
-                {accounts.map((a) => (
-                  <option key={a.id} value={a.id}>
-                    {a.label}
-                  </option>
-                ))}
-              </select>
-            )}
           </div>
 
           <div className="mt-3 flex flex-wrap gap-2">
@@ -313,25 +363,23 @@ export default function Dashboard() {
       </header>
 
       <main className="mx-auto max-w-5xl px-4 pb-36 pt-4">
-        {accounts
-          .filter((a) => a.needsReconnect)
-          .map((a) => (
-            <div key={a.id} className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-amber/40 bg-amber/10 px-4 py-3 text-sm">
-              <span className="min-w-0 truncate">{a.email} needs to be reconnected.</span>
-              <a
-                href={a.oauth ? `/api/oauth/${a.provider}?email=${encodeURIComponent(a.email)}` : `/connect?email=${encodeURIComponent(a.email)}`}
-                className="shrink-0 font-medium underline underline-offset-2"
-              >
-                Reconnect
-              </a>
-            </div>
-          ))}
+        {account?.needsReconnect && (
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-amber/40 bg-amber/10 px-4 py-3 text-sm">
+            <span className="min-w-0">Hate Mail lost access to {account.email}. Connect it again to keep going.</span>
+            <a
+              href={account.oauth ? `/api/oauth/${account.provider}?email=${encodeURIComponent(account.email)}` : `/connect?email=${encodeURIComponent(account.email)}`}
+              className="shrink-0 font-medium underline underline-offset-2"
+            >
+              Reconnect
+            </a>
+          </div>
+        )}
 
         {scan?.first && (
           <div className="mb-4 rounded-xl border border-navy-700 bg-navy-900 p-4">
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <p className="min-w-0 truncate">
-                Scanning <span className="font-semibold">{scan.email}</span>
+                Scanning <span className="font-semibold">{account?.email}</span>
               </p>
               <p className="shrink-0 text-muted">
                 {scan.total ? `${scan.scanned.toLocaleString()} of ${scan.total.toLocaleString()} emails` : 'Starting…'}
@@ -347,7 +395,12 @@ export default function Dashboard() {
         {senders.length > 0 && (
           <div className="mb-2 flex items-center justify-between gap-3 px-1 text-sm text-muted">
             <label className="flex items-center gap-2">
-              <input type="checkbox" checked={allSelected} onChange={() => setSelected(allSelected ? new Set() : new Set(selectable.map((s) => s.id)))} className="h-4 w-4 accent-coral" />
+              <input
+                type="checkbox"
+                checked={allSelected}
+                onChange={() => setSelected(allSelected ? new Set() : new Set(selectable.map((s) => s.id)))}
+                className="h-4 w-4 accent-coral"
+              />
               Select all
             </label>
             <span className="text-right">
@@ -386,20 +439,9 @@ export default function Dashboard() {
                     </div>
                     <p className="truncate text-sm text-muted">{s.address}</p>
                   </div>
-                  <div className="mt-1 text-sm text-muted md:mt-0 md:w-72 md:shrink-0">
-                    <p className="md:whitespace-nowrap">
-                      {rate(s)} · Since {monthYear(s.since)}
-                    </p>
-                    {multi && (
-                      <div className="mt-1 flex flex-wrap gap-1">
-                        {s.accounts.map((a) => (
-                          <span key={a.id} className="max-w-40 truncate rounded bg-navy-700 px-1.5 py-0.5 text-xs text-ink/80">
-                            {a.label}
-                          </span>
-                        ))}
-                      </div>
-                    )}
-                  </div>
+                  <p className="mt-1 text-sm text-muted md:mt-0 md:w-72 md:shrink-0 md:whitespace-nowrap">
+                    {rate(s)} · Since {monthYear(s.since)}
+                  </p>
                 </div>
 
                 <div className="order-last w-full pl-20 md:order-none md:w-44 md:shrink-0 md:pl-0 md:text-right">
@@ -411,12 +453,11 @@ export default function Dashboard() {
                       onClick={() => unsubscribe(s)}
                       className="rounded-full border border-coral/70 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-coral-soft transition hover:bg-coral hover:text-white disabled:opacity-50"
                     >
-                      {working ? 'Working…' : s.status === 'still-sending' ? 'Unsubscribe again' : s.status === 'partial' ? 'Finish' : 'Unsubscribe'}
+                      {working ? 'Working…' : s.status === 'still-sending' ? 'Unsubscribe again' : 'Unsubscribe'}
                       {!working && s.method !== 'auto' ? ' ↗' : ''}
                     </button>
                   )}
                 </div>
-
               </li>
             )
           })}
@@ -429,9 +470,11 @@ export default function Dashboard() {
         {senders.length > 0 && !visible.length && <p className="py-16 text-center text-muted">Nothing matches.</p>}
       </main>
 
+      {switcher && <div className="fixed inset-0 z-20" onClick={() => setSwitcher(false)} />}
+
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-30 px-4">
-          <div className="mx-auto flex max-w-3xl flex-wrap items-center gap-2 rounded-2xl border border-navy-600 bg-navy-950/95 px-4 py-3 shadow-2xl backdrop-blur">
+          <div className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-navy-600 bg-navy-950/95 px-4 py-3 shadow-2xl backdrop-blur">
             <span className="mr-auto text-sm font-medium">{selected.size} selected</span>
             <button onClick={unsubscribeSelected} className="rounded-full bg-coral px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-coral-soft">
               Unsubscribe
@@ -449,7 +492,25 @@ export default function Dashboard() {
             {toast}
           </p>
         </div>
-      )}    </div>
+      )}
+
+      {leaving && account && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setLeaving(false)}>
+          <div role="dialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-navy-700 bg-navy-900 p-6" onClick={(e) => e.stopPropagation()}>
+            <h2 className="text-lg font-semibold">Sign out of {account.email}?</h2>
+            <p className="mt-2 text-sm text-muted">Hate Mail forgets this account and its senders on this device. Nothing in your mailbox changes.</p>
+            <div className="mt-6 flex justify-end gap-2">
+              <button onClick={() => setLeaving(false)} className="btn-quiet">
+                Cancel
+              </button>
+              <button onClick={signOut} autoFocus className="btn-primary py-2 text-sm">
+                Sign out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+    </div>
   )
 }
 

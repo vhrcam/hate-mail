@@ -1,13 +1,12 @@
 import type { NextRequest } from 'next/server'
-import { apiUser, notSignedIn } from '@/lib/auth'
 import { detect } from '@/lib/providers'
 import { oauthReady } from '@/lib/oauth'
+import { sameOrigin } from '@/lib/session'
 
 export async function POST(req: NextRequest) {
-  const user = apiUser(req)
-  if (!user) return notSignedIn()
+  if (!sameOrigin(req)) return Response.json({ error: 'Bad request.' }, { status: 403 })
   const email = String((await req.json()).email ?? '').trim().toLowerCase()
-  if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email)) return Response.json({ error: 'Enter a valid email address.' }, { status: 400 })
+  if (!/^[^\s@]+@[a-z0-9-]+(\.[a-z0-9-]+)*\.[a-z]{2,}$/.test(email)) return Response.json({ error: 'Enter a valid email address.' }, { status: 400 })
 
   const p = await detect(email)
   return Response.json({

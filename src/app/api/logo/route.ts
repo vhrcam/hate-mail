@@ -1,5 +1,5 @@
 import type { NextRequest } from 'next/server'
-import { apiUser } from '@/lib/auth'
+import { apiSession } from '@/lib/session'
 
 type Logo = { body: ArrayBuffer; type: string } | null
 
@@ -20,7 +20,7 @@ async function fetchLogo(domain: string): Promise<Logo> {
 }
 
 export async function GET(req: NextRequest) {
-  if (!apiUser(req)) return new Response(null, { status: 401 })
+  if (!apiSession(req)) return new Response(null, { status: 401 })
   const domain = req.nextUrl.searchParams.get('d')?.toLowerCase() ?? ''
   if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) return new Response(null, { status: 400 })
 

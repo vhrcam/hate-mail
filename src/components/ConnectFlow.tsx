@@ -60,7 +60,7 @@ export default function ConnectFlow({ hasAccounts, initialEmail, error }: { hasA
     e.preventDefault()
     const form = Object.fromEntries(new FormData(e.currentTarget))
     const data = await post('/api/accounts', { ...form, email: info!.email, provider: info!.id })
-    if (data) go('/')
+    if (data) go(`/?account=${data.id}`)
   }
 
   function go(path: string) {
@@ -78,8 +78,11 @@ export default function ConnectFlow({ hasAccounts, initialEmail, error }: { hasA
   return (
     <main className="flex min-h-screen items-center justify-center px-4 py-10">
       <div className="w-full max-w-md rounded-2xl border border-navy-700 bg-navy-900 p-7">
-        <h1 className="text-2xl font-bold">Connect your email</h1>
-        <p className="mt-1 text-sm text-muted">Hate Mail looks at who your emails are from and never saves what they say.</p>
+        <h1 className="text-2xl font-bold">{hasAccounts ? 'Add an account' : 'Hate Mail'}</h1>
+        <p className="mt-1 text-sm text-muted">
+          {hasAccounts ? 'Connect another email to switch between them.' : 'Connect your email to see every mailing list you’re on.'} Hate Mail
+          looks at who your emails are from and never saves what they say.
+        </p>
 
         {!info && (
           <form onSubmit={lookup} className="mt-6">
@@ -195,24 +198,11 @@ export default function ConnectFlow({ hasAccounts, initialEmail, error }: { hasA
 
         {message && <p className="mt-4 text-sm text-coral-soft">{message}</p>}
 
-        <div className="mt-6 flex justify-between text-sm text-muted">
-          {hasAccounts ? (
-            <Link href="/" className="underline underline-offset-2 hover:text-ink">
-              Back to your senders
-            </Link>
-          ) : (
-            <span />
-          )}
-          <button
-            onClick={async () => {
-              await fetch('/api/auth/logout', { method: 'POST' })
-              go('/login')
-            }}
-            className="underline underline-offset-2 hover:text-ink"
-          >
-            Sign out
-          </button>
-        </div>
+        {hasAccounts && (
+          <Link href="/" className="mt-6 inline-block text-sm text-muted underline underline-offset-2 hover:text-ink">
+            Back to your senders
+          </Link>
+        )}
       </div>
     </main>
   )

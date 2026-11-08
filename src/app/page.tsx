@@ -1,20 +1,19 @@
 import { Suspense } from 'react'
 import { redirect } from 'next/navigation'
-import { currentUser } from '@/lib/auth'
-import { countAccounts } from '@/lib/accounts'
+import { currentSession } from '@/lib/session'
 import Dashboard from '@/components/Dashboard'
 
-export default function Home() {
+export default function Home({ searchParams }: PageProps<'/'>) {
   return (
     <Suspense>
-      <Gate />
+      <Gate searchParams={searchParams} />
     </Suspense>
   )
 }
 
-async function Gate() {
-  const user = await currentUser()
-  if (!user) redirect('/login')
-  if (!countAccounts(user.id)) redirect('/connect')
-  return <Dashboard />
+async function Gate({ searchParams }: { searchParams: PageProps<'/'>['searchParams'] }) {
+  const session = await currentSession()
+  if (!session?.accountIds.length) redirect('/connect')
+  const { account } = await searchParams
+  return <Dashboard initialAccount={Number(account) || 0} />
 }

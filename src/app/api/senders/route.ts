@@ -1,15 +1,16 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { apiUser, extendSession, notSignedIn, SESSION_COOKIE, sessionCookie } from '@/lib/auth'
 import { listAccounts } from '@/lib/accounts'
 import { listSenders } from '@/lib/senders'
+import { apiSession, extendSession, notSignedIn, sessionCookie } from '@/lib/session'
 
 export async function GET(req: NextRequest) {
-  const user = apiUser(req)
-  if (!user) return notSignedIn()
+  const session = apiSession(req)
+  if (!session || !session.accountIds.length) return notSignedIn()
 
-  const res = NextResponse.json({ senders: listSenders(user.id), accounts: listAccounts(user.id) })
-  const token = req.cookies.get(SESSION_COOKIE)!.value
-  extendSession(token)
-  res.cookies.set(sessionCookie(token))
+  const requested = Number(req.nextUrl.searchParams.get('account'))
+  const account = session.accountIds.includes(requested) ? requested : session.accountIds[session.accountIds.length - 1]
+  const res = NextResponse.json({ account, accounts: listAccounts(session.accountIds), senders: listSenders(account) })
+  extendSession(session)
+  res.cookies.set(sessionCookie(session.token))
   return res
 }

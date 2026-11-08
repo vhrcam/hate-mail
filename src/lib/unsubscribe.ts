@@ -1,10 +1,10 @@
 import type { ImapFlow } from 'imapflow'
 import { simpleParser } from 'mailparser'
-import { db, getAccount } from './db'
+import { db, getAccount, type Account } from './db'
 import { unsubscribeLinkFromHtml, unsubscribeLinkFromText, unsubscribeLinks } from './headers'
 import { mailFolders, openImap, sendMail } from './mail'
 import { safePost } from './net'
-import { isStale, listSenders, needsUnsubscribe, rowMethod, senderRows, type SenderRow } from './senders'
+import { listSenders, needsUnsubscribe, rowMethod, senderRows, type SenderRow } from './senders'
 
 async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>) {
   const queue = [...items]
@@ -13,14 +13,8 @@ async function pool<T>(items: T[], size: number, fn: (item: T) => Promise<void>)
   }))
 }
 
-function setRow(row: SenderRow, column: 'done_at' | 'auto_failed', value: number) {
-  db().prepare(`update sender_accounts set ${column} = ? where sender_id = ? and account_id = ?`).run(value, row.sender_id, row.account_id)
-}
-
-function refreshSender(userId: number, senderId: number) {
-  const rows = senderRows(userId, [senderId])
-  const allDone = rows.length > 0 && rows.every((r) => r.done_at && !isStale(r))
-  db().prepare('update senders set unsubscribed_at = ? where id = ?').run(allDone ? (rows[0].unsubscribed_at ?? Date.now()) : null, senderId)
+function setRow(id: number, column: 'done_at' | 'auto_failed', value: number) {
+  db().prepare(`update senders set ${column} = ? where id = ?`).run(value, id)
 }
 
 function parseMailto(url: string) {
@@ -34,15 +28,14 @@ function parseMailto(url: string) {
   }
 }
 
-async function automatic(userId: number, row: SenderRow) {
+async function automatic(account: Account, row: SenderRow) {
   const links = unsubscribeLinks(row.unsub_header, !!row.unsub_post)
   if (links.oneClick) {
     const status = await safePost(links.https!, 'List-Unsubscribe=One-Click').catch(() => 0)
     if (status >= 200 && status < 400) return true
   }
   const email = links.mailto ? parseMailto(links.mailto) : null
-  const account = getAccount(userId, row.account_id)
-  if (email && account?.smtp_host) {
+  if (email && account.smtp_host) {
     try {
       await sendMail(account, email)
       return true
@@ -51,25 +44,25 @@ async function automatic(userId: number, row: SenderRow) {
   return false
 }
 
-export async function unsubscribe(userId: number, ids: number[], opened: string[] = []) {
-  const rows = senderRows(userId, ids).filter(needsUnsubscribe)
-  const failed = new Set<number>()
+export async function unsubscribe(accountId: number, ids: number[], opened: string[] = []) {
+  const account = getAccount(accountId)!
+  const rows = senderRows(accountId, ids).filter(needsUnsubscribe)
+  const failed: number[] = []
 
   await pool(rows, 6, async (row) => {
     const method = rowMethod(row)
     if (method.kind === 'auto') {
-      if (await automatic(userId, row)) setRow(row, 'done_at', Date.now())
+      if (await automatic(account, row)) setRow(row.id, 'done_at', Date.now())
       else {
-        setRow(row, 'auto_failed', 1)
-        failed.add(row.id)
+        setRow(row.id, 'auto_failed', 1)
+        failed.push(row.id)
       }
     } else if (method.kind === 'link' && opened.includes(method.url)) {
-      setRow(row, 'done_at', Date.now())
+      setRow(row.id, 'done_at', Date.now())
     }
   })
 
-  for (const id of new Set(rows.map((r) => r.id))) refreshSender(userId, id)
-  return { senders: listSenders(userId, ids), failed: [...failed] }
+  return { senders: listSenders(accountId, ids), failed }
 }
 
 async function linkFromMessage(client: ImapFlow, folder: string, uid: number) {
@@ -103,11 +96,11 @@ async function newestFrom(client: ImapFlow, address: string) {
   }
 }
 
-export async function findLink(userId: number, senderId: number) {
-  const row = senderRows(userId, [senderId]).filter(needsUnsubscribe).find((r) => rowMethod(r).kind === 'find')
+export async function findLink(accountId: number, senderId: number) {
+  const row = senderRows(accountId, [senderId]).find((r) => needsUnsubscribe(r) && rowMethod(r).kind === 'find')
   if (!row) return { error: 'There’s nothing left to unsubscribe from here.' }
 
-  const client = await openImap(getAccount(userId, row.account_id)!)
+  const client = await openImap(getAccount(accountId)!)
   let url: string | null = null
   try {
     url = await linkFromMessage(client, row.latest_folder, row.latest_uid).catch(() => null)
@@ -120,7 +113,6 @@ export async function findLink(userId: number, senderId: number) {
   }
 
   if (!url) return { error: `Couldn’t find an unsubscribe link in ${row.name || row.address}’s latest email.` }
-  setRow(row, 'done_at', Date.now())
-  refreshSender(userId, senderId)
-  return { url, senders: listSenders(userId, [senderId]) }
+  setRow(row.id, 'done_at', Date.now())
+  return { url, senders: listSenders(accountId, [senderId]) }
 }

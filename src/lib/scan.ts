@@ -1,6 +1,6 @@
 import type { FetchMessageObject } from 'imapflow'
 import { getDomain } from 'tldts'
-import { db, removeOrphanSenders, type Account } from './db'
+import { db, type Account } from './db'
 import { mailFolders, openImap } from './mail'
 import { isBulk, isOneClickPost, parseHeaders } from './headers'
 import { mergeMonths, monthKey, type Months } from './stats'
@@ -23,7 +23,7 @@ type Found = {
   post: boolean
 }
 
-type Row = { total: number; opened: number; first_at: number; last_at: number; months: string; unsub_header: string | null }
+type Row = { id: number; total: number; opened: number; first_at: number; last_at: number; months: string }
 
 const running = new Set<number>()
 
@@ -39,8 +39,7 @@ export async function scanAccount(account: Account, budgetMs = 20000) {
 
 async function scan(account: Account, deadline: number): Promise<{ done: boolean; scanned: number; total: number }> {
   const state: State = account.scan_state ? JSON.parse(account.scan_state) : { folders: {}, scanned: 0 }
-  const own = new Set((db().prepare('select email from accounts where user_id = ?').all(account.user_id) as { email: string }[]).map((r) => r.email))
-  own.add(account.login.toLowerCase())
+  const own = new Set([account.email, account.login.toLowerCase()])
 
   let remaining = 0
   let reset = false
@@ -85,7 +84,7 @@ async function scan(account: Account, deadline: number): Promise<{ done: boolean
   }
 
   if (reset) {
-    db().prepare('delete from sender_accounts where account_id = ?').run(account.id)
+    db().prepare(`update senders set total = 0, opened = 0, months = '{}', first_at = 9e15, last_at = 0 where account_id = ?`).run(account.id)
     db().prepare('update accounts set scan_state = null where id = ?').run(account.id)
     return scan({ ...account, scan_state: null }, deadline)
   }
@@ -93,7 +92,7 @@ async function scan(account: Account, deadline: number): Promise<{ done: boolean
   const done = remaining === 0
   if (done) {
     db().prepare('update accounts set scan_state = ?, scanned_at = ? where id = ?').run(JSON.stringify({ ...state, scanned: 0 }), Date.now(), account.id)
-    removeOrphanSenders(account.user_id)
+    db().prepare('delete from senders where account_id = ? and total = 0').run(account.id)
   }
   return { done, scanned: state.scanned, total: state.scanned + remaining }
 }
@@ -133,41 +132,33 @@ function save(account: Account, found: Map<string, Found>, state: State) {
   const conn = db()
   conn.transaction(() => {
     for (const [address, s] of found) {
-      const domain = address.split('@')[1]
-      let sender = conn.prepare('select id from senders where user_id = ? and address = ?').get(account.user_id, address) as { id: number } | undefined
-      if (!sender) {
-        const { lastInsertRowid } = conn
-          .prepare('insert into senders (user_id, address, name, domain) values (?, ?, ?, ?)')
-          .run(account.user_id, address, s.name || null, getDomain(domain) ?? domain)
-        sender = { id: Number(lastInsertRowid) }
-      }
-
-      const row = conn.prepare('select * from sender_accounts where sender_id = ? and account_id = ?').get(sender.id, account.id) as Row | undefined
-      const newer = !row || s.last >= row.last_at
-      if (newer && s.name) conn.prepare('update senders set name = ? where id = ?').run(s.name, sender.id)
+      const row = conn.prepare('select id, total, opened, first_at, last_at, months from senders where account_id = ? and address = ?').get(account.id, address) as
+        | Row
+        | undefined
 
       if (!row) {
+        const domain = address.split('@')[1]
         conn
           .prepare(
-            `insert into sender_accounts (sender_id, account_id, total, opened, first_at, last_at, months, latest_folder, latest_uid, unsub_header, unsub_post)
-             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+            `insert into senders (account_id, address, name, domain, total, opened, first_at, last_at, months, latest_folder, latest_uid, unsub_header, unsub_post)
+             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
           )
-          .run(sender.id, account.id, s.total, s.opened, s.first, s.last, JSON.stringify(s.months), s.folder, s.uid, s.unsub, s.post ? 1 : 0)
+          .run(account.id, address, s.name || null, getDomain(domain) ?? domain, s.total, s.opened, s.first, s.last, JSON.stringify(s.months), s.folder, s.uid, s.unsub, s.post ? 1 : 0)
         continue
       }
 
       const months = JSON.stringify(mergeMonths(JSON.parse(row.months), s.months))
       conn
-        .prepare('update sender_accounts set total = ?, opened = ?, first_at = ?, last_at = ?, months = ? where sender_id = ? and account_id = ?')
-        .run(row.total + s.total, row.opened + s.opened, Math.min(row.first_at, s.first), Math.max(row.last_at, s.last), months, sender.id, account.id)
-      if (newer) {
+        .prepare('update senders set total = ?, opened = ?, first_at = ?, last_at = ?, months = ? where id = ?')
+        .run(row.total + s.total, row.opened + s.opened, Math.min(row.first_at, s.first), Math.max(row.last_at, s.last), months, row.id)
+      if (s.last >= row.last_at) {
         conn
           .prepare(
-            `update sender_accounts set latest_folder = ?, latest_uid = ?, unsub_header = ?, unsub_post = ?,
+            `update senders set name = coalesce(?, name), latest_folder = ?, latest_uid = ?, unsub_header = ?, unsub_post = ?,
              auto_failed = case when coalesce(unsub_header, '') = coalesce(?, '') then auto_failed else 0 end
-             where sender_id = ? and account_id = ?`,
+             where id = ?`,
           )
-          .run(s.folder, s.uid, s.unsub, s.post ? 1 : 0, s.unsub, sender.id, account.id)
+          .run(s.name || null, s.folder, s.uid, s.unsub, s.post ? 1 : 0, s.unsub, row.id)
       }
     }
     conn.prepare('update accounts set scan_state = ? where id = ?').run(JSON.stringify(state), account.id)

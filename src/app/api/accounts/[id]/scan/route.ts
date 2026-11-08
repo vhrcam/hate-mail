@@ -1,21 +1,20 @@
 import type { NextRequest } from 'next/server'
-import { apiUser, notSignedIn } from '@/lib/auth'
 import { getAccount } from '@/lib/db'
 import { errorText } from '@/lib/mail'
 import { scanAccount } from '@/lib/scan'
+import { apiSession, notSignedIn } from '@/lib/session'
 
 export async function POST(req: NextRequest, ctx: RouteContext<'/api/accounts/[id]/scan'>) {
-  const user = apiUser(req)
-  if (!user) return notSignedIn()
+  const session = apiSession(req)
   const id = Number((await ctx.params).id)
-  const account = getAccount(user.id, id)
-  if (!account) return Response.json({ error: 'Account not found.' }, { status: 404 })
+  if (!session || !session.accountIds.includes(id)) return notSignedIn()
+  const account = getAccount(id)
+  if (!account) return notSignedIn()
   if (account.needs_reconnect) return Response.json({ error: 'Reconnect this account to keep scanning.', reconnect: true }, { status: 409 })
 
   try {
     return Response.json(await scanAccount(account))
   } catch (e) {
-    const reconnect = !!getAccount(user.id, id)?.needs_reconnect
-    return Response.json({ error: errorText(e), reconnect }, { status: 502 })
+    return Response.json({ error: errorText(e), reconnect: !!getAccount(id)?.needs_reconnect }, { status: 502 })
   }
 }

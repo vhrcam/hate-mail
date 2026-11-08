@@ -1,11 +1,9 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { apiUser } from '@/lib/auth'
 import { randomToken } from '@/lib/crypto'
 import { oauthConfig, oauthReady, pkce, redirectUri } from '@/lib/oauth'
 
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/oauth/[provider]'>) {
   const { provider } = await ctx.params
-  if (!apiUser(req)) return NextResponse.redirect(new URL('/login', req.url))
   const config = oauthConfig(provider)
   if (!config || !oauthReady(provider)) return NextResponse.redirect(new URL('/connect?error=setup', req.url))
 

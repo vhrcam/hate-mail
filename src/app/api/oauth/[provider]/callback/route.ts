@@ -1,14 +1,12 @@
 import { NextResponse, type NextRequest } from 'next/server'
-import { apiUser } from '@/lib/auth'
 import { saveAccount } from '@/lib/accounts'
 import { encrypt } from '@/lib/crypto'
 import { emailFromIdToken, redirectUri, tokenRequest } from '@/lib/oauth'
 import { providers } from '@/lib/providers'
+import { sessionCookie, signIn } from '@/lib/session'
 
 export async function GET(req: NextRequest, ctx: RouteContext<'/api/oauth/[provider]/callback'>) {
   const { provider } = await ctx.params
-  const user = apiUser(req)
-  if (!user) return NextResponse.redirect(new URL('/login', req.url))
 
   const done = (path: string) => {
     const res = NextResponse.redirect(new URL(path, req.url))
@@ -38,7 +36,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/oauth/[provi
 
   const p = providers[provider]
   const consumerOutlook = provider === 'microsoft' && /^(outlook|hotmail|live|msn|passport)\./.test(email.split('@')[1])
-  saveAccount(user.id, {
+  const id = saveAccount({
     email,
     provider,
     auth: 'oauth',
@@ -51,5 +49,8 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/oauth/[provi
     accessToken: encrypt(data.access_token),
     accessExpires: Date.now() + data.expires_in * 1000,
   })
-  return done('/')
+
+  const res = done(`/?account=${id}`)
+  res.cookies.set(sessionCookie(signIn(req, id)))
+  return res
 }
