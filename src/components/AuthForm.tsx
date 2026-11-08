@@ -1,9 +1,11 @@
 'use client'
 
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 
 export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
+  const router = useRouter()
   const [error, setError] = useState('')
   const [busy, setBusy] = useState(false)
   const signup = mode === 'signup'
@@ -23,7 +25,8 @@ export default function AuthForm({ mode }: { mode: 'login' | 'signup' }) {
       setBusy(false)
       return
     }
-    window.location.assign(signup ? '/connect' : '/')
+    router.replace(signup ? '/connect' : '/')
+    router.refresh()
   }
 
   return (

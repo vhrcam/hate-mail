@@ -1,8 +1,8 @@
 import type { NextConfig } from "next";
 
 const nextConfig: NextConfig = {
-  /* config options here */
   cacheComponents: true,
+  serverExternalPackages: ["imapflow", "nodemailer", "mailparser"],
   partialPrefetching: true,
   turbopack: {
     rules: {
