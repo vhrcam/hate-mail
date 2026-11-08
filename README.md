@@ -1,43 +1,81 @@
 # Hate Mail
 
-See every mailing list that sends you email, and unsubscribe from the ones you don't want.
+A web app that finds every mailing list sending you email and lets you unsubscribe from the ones you don't want. Navy and dark blue, with each sender in its own box.
 
-After years of using one email address, it ends up on hundreds of lists. Hate Mail connects to your account, finds every sender that emails you in bulk, and lists them in one place with an unsubscribe button on each one.
+Most people have used the same email address for ten years or more, and in that time it lands on hundreds of lists: stores you bought from once, apps you tried, newsletters you never read. Unsubscribing one email at a time never keeps up. Hate Mail connects to your mailbox, finds everyone sending you bulk email, and lists them in one place, with the date their first email arrived and an unsubscribe button on each one.
+
+![Hate Mail's sender list, with each mailing list in a dark box showing its logo or first letter, its address, how many emails it sends a month, when its first email arrived, and an Unsubscribe button on the right](docs/senders.png)
+
+## Sign in
+
+There's no Hate Mail password. Connecting your email signs you in, and you stay signed in on that browser.
+
+- **Gmail and Outlook:** Continue with Google or Continue with Microsoft. These buttons need sign-in keys first (see [Setup](#setup)).
+- **Gmail, iCloud, Yahoo, AOL, Zoho and Fastmail:** use an app password. Type your address and Hate Mail shows the steps for your provider, with a link to the right settings page.
+- **Any other email:** Hate Mail looks up the server settings for your domain and fills them in. You can change them under Server settings.
+- **Proton Mail** can't connect. Proton only lets other apps in through Proton Bridge, a desktop app.
+
+The menu at the top right shows the account you're looking at. Open it to switch to another one, add another account, or sign out of the one you're on. Signing out makes Hate Mail forget that account and its senders on that browser. Nothing in your mailbox changes.
+
+<img src="docs/connect.png" width="380" alt="The connect screen for an iCloud address, with numbered steps for making an app-specific password, a link to Apple's settings, and the app password box">
 
 ## What it does
 
-- **Connects any email account:** Gmail, Outlook, iCloud, Yahoo, AOL, Zoho, Fastmail, or any other IMAP account. You can connect several at once.
-- **Reads headers only:** it looks at who sent each email and when, never what the email says.
-- **Lists every sender** with their logo, how many emails they send a month, and when their first email arrived ("Since Mar 2016").
-- **Unsubscribes in one click**, or select a batch of senders and unsubscribe from all of them at once.
-- **Flags "Still sending"** when a sender keeps emailing more than 14 days after you unsubscribed.
-- **Sort and filter:** most emails, oldest, newest, A–Z, "Not opened in a year", "One-click", search, or a single account.
+- **Finds every mailing list.** Hate Mail reads who each email is from and when, across your inbox and other folders (on Gmail, All Mail). It only keeps email sent to a list, meaning anything with an unsubscribe or mailing list header. Email from people is left out.
+- **One box per sender:**
+  - their logo, or their first letter in a circle when they don't have one
+  - their name and address
+  - how many emails they send a month
+  - "Since": the date of the first email they sent you. That's usually the welcome email, so it shows about when you signed up.
+- **Unsubscribe** with the button on the right. What it does depends on what the sender supports:
+  - **One-click:** Hate Mail unsubscribes you in the background. Most big senders support this.
+  - **Unsubscribe email:** Hate Mail sends it from your account.
+  - **Unsubscribe page:** the button has a ↗ and opens their page in a new tab.
+  - **No unsubscribe info:** Hate Mail finds the unsubscribe link in their latest email and opens it.
+- **Unsubscribe from a lot at once.** Check the boxes (or Select all) and press Unsubscribe in the bar at the bottom. One-click senders are done right away. Any that need their website are marked with ↗.
+- **Still sending.** If a sender keeps emailing more than 14 days after you unsubscribed, it gets a Still sending tag and an Unsubscribe again button. That button takes you to their unsubscribe page this time. US law gives senders 10 business days.
+- **Sort and filter.** Sort by most emails, oldest first, newest first, or A–Z. Filter by Not opened in a year or One-click, or search by name or address.
+- **Unsubscribed senders** dim in place, so the list doesn't jump while you work down it. They move to the bottom the next time you open Hate Mail.
+- **Scanning.** The first scan goes through all of your mail, 500 emails at a time, with a progress bar. After that, Hate Mail only checks new mail. It checks when you open it (if the last check was over 15 minutes ago) and when you press Refresh.
+- **Works on phones.** The boxes stack and the button moves under each sender.
 
-## Run it locally
+<img src="docs/phone.png" width="260" alt="Hate Mail on a phone, with each sender's details stacked and the Unsubscribe button underneath">
+
+## Good to know
+
+- **Your mailbox stays as it is.** Folders are opened read-only, so nothing is moved, deleted or marked as read. The only thing Hate Mail does in your account is send an unsubscribe email when a sender asks for one.
+- **What's saved:** sender names and addresses, email counts per month, and each sender's latest unsubscribe link, in a SQLite database in `data/`. Subjects and message text are never saved.
+- **Encryption:** app passwords and sign-in tokens are encrypted with AES-256-GCM.
+- **Logos** come from Google's public favicon service, which sees your senders' website names. It never sees your email address.
+- **Safety:** unsubscribe requests that Hate Mail sends itself only go to public HTTPS addresses.
+- **Google's limits:** while your Google sign-in keys are in Testing mode, Google allows up to 100 test users, and sign-ins expire after 7 days. Hate Mail shows a Reconnect button when that happens. A public launch needs Google's verification for Gmail access.
+- **Work and school accounts:** some block outside apps until an admin approves them.
+
+## Setup
 
 You need [Node.js](https://nodejs.org) 22 or newer.
 
-```bash
+```
+git clone https://github.com/vhrcam/hate-mail.git
+cd hate-mail
 npm install
 npm run dev
 ```
 
-Open http://localhost:3000, create an account, and connect your email.
+npm may warn about install scripts. Hate Mail doesn't need them, so you can ignore it. Open http://localhost:3000 and connect your email. App passwords work right away.
 
-App passwords work right away for Gmail, iCloud, Yahoo, AOL, Zoho and Fastmail. The "Continue with Google" and "Continue with Microsoft" buttons need the sign-in setup below.
-
-## Settings
+### Settings
 
 Copy `.env.example` to `.env.local` and fill in what you need:
 
 | Setting | What it's for |
 | --- | --- |
-| `ENCRYPTION_KEY` | Encrypts saved passwords and sign-in tokens. Optional locally (a key is created in `data/secret.key`), required in production. Make one with `openssl rand -base64 32`. |
-| `APP_URL` | The address the app runs at. Sign-in redirects use it. |
-| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Sign in with Google |
-| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Sign in with Microsoft |
+| `ENCRYPTION_KEY` | Encrypts saved passwords and sign-in tokens. Optional on your own computer (Hate Mail makes one in `data/secret.key`), required on a server. Make one with `openssl rand -base64 32`. |
+| `APP_URL` | The address Hate Mail runs at. Google and Microsoft send you back here after you sign in. |
+| `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Continue with Google |
+| `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Continue with Microsoft |
 
-### Sign in with Google
+### Continue with Google
 
 1. In the [Google Cloud Console](https://console.cloud.google.com), create a project.
 2. Under APIs & Services → Library, enable the **Gmail API**.
@@ -47,9 +85,7 @@ Copy `.env.example` to `.env.local` and fill in what you need:
    - Clients: create a **Web application** client with the redirect URI `http://localhost:3000/api/oauth/google/callback`.
 4. Put the client ID and secret in `.env.local` and restart `npm run dev`.
 
-While the app is in Testing mode, Google allows up to 100 test users, and each sign-in expires after 7 days (reconnect from the Accounts page). A public launch needs Google's verification for Gmail access.
-
-### Sign in with Microsoft
+### Continue with Microsoft
 
 1. In the [Azure portal](https://portal.azure.com), open Microsoft Entra ID → App registrations → New registration.
 2. For supported account types, choose **Accounts in any organizational directory and personal Microsoft accounts**.
@@ -58,26 +94,13 @@ While the app is in Testing mode, Google allows up to 100 test users, and each s
 5. Under API permissions, add the Microsoft Graph delegated permissions `IMAP.AccessAsUser.All`, `SMTP.Send`, `offline_access`, `openid` and `email`.
 6. Put the Application (client) ID and the secret in `.env.local` and restart.
 
-Some school and work accounts block outside apps until an admin approves them.
-
-## How it works
-
-- **Scanning:** it scans every mail folder except Sent, Drafts, Trash and Spam (on Gmail, just All Mail), 500 emails at a time. Later scans only check new mail.
-- **What counts as a mailing list:** only email with a `List-Unsubscribe`, `List-Id` or bulk `Precedence` header. Personal email is ignored.
-- **What gets saved:** sender names and addresses, email counts per month, and each sender's latest unsubscribe link. Subjects and message text are never saved. Passwords and sign-in tokens are encrypted with AES-256-GCM.
-- **Your mailbox stays as it is:** folders are opened read-only, so nothing gets moved, marked as read or deleted. The only thing Hate Mail does in your account is send an unsubscribe email when a sender asks for one.
-- **How it unsubscribes,** best option first:
-  1. One-click unsubscribe (RFC 8058).
-  2. An unsubscribe email sent from your account.
-  3. The sender's unsubscribe page, opened in a new tab.
-  4. The unsubscribe link found in their latest email.
-- **Safety:** unsubscribe requests made by the server only go to public HTTPS addresses.
-
 ## Tests
 
-```bash
+```
 npm test
 ```
+
+They cover header parsing, finding unsubscribe links, the monthly email counts, provider detection, and the checks that keep unsubscribe requests off private addresses.
 
 ## Built with
 
