@@ -6,11 +6,11 @@ Most people have used the same email address for ten years or more, and in that 
 
 ## Sign in
 
-There's no Hate Mail password. Connecting your email signs you in, and you stay signed in on that browser.
+There's no Hate Mail password. Pick your email provider from the list and sign in, and you stay signed in on that browser.
 
-- **Gmail and Outlook:** Continue with Google or Continue with Microsoft. These buttons need sign-in keys first (see [Setup](#setup)).
-- **Gmail, iCloud, Yahoo, AOL, Zoho and Fastmail:** use an app password. Type your address and Hate Mail shows the steps for your provider, with a link to the right settings page.
-- **Any other email:** Hate Mail looks up the server settings for your domain and fills them in. You can change them under Server settings.
+- **Google and Outlook:** go to Google's or Microsoft's own sign-in page once the sign-in keys are set up (see [Setup](#setup)). Until then, Google accounts use an app password.
+- **iCloud, Yahoo and AOL:** use an app password. Hate Mail shows the steps for your provider, with a link to the right settings page.
+- **Other email:** type your address and Hate Mail looks up the server settings for your domain. School and work accounts that run on Google or Microsoft go to the right sign-in. You can change the settings under Server settings.
 - **Proton Mail** can't connect. Proton only lets other apps in through Proton Bridge, a desktop app.
 
 The menu at the top right shows the account you're looking at. Open it to switch to another one, add another account, or sign out of the one you're on. Signing out makes Hate Mail forget that account and its senders on that browser. Nothing in your mailbox changes.
