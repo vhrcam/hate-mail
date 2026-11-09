@@ -1,5 +1,8 @@
 import type { Metadata, Viewport } from 'next'
+import { Geist } from 'next/font/google'
 import './globals.css'
+
+const geist = Geist({ subsets: ['latin'], variable: '--font-geist' })
 
 export const metadata: Metadata = {
   title: 'Hate Mail',
@@ -7,12 +10,12 @@ export const metadata: Metadata = {
 }
 
 export const viewport: Viewport = {
-  themeColor: '#0f1f47',
+  themeColor: '#232428',
 }
 
 export default function RootLayout({ children }: LayoutProps<'/'>) {
   return (
-    <html lang="en" className="h-full antialiased">
+    <html lang="en" className={`${geist.variable} h-full antialiased`}>
       <body className="min-h-full font-sans">{children}</body>
     </html>
   )

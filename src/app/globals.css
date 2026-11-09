@@ -1,19 +1,19 @@
 @import "tailwindcss";
 
 @theme {
-  --color-navy-950: #060e24;
-  --color-navy-900: #0a1533;
-  --color-navy-850: #0c1a3d;
-  --color-navy-800: #0f1f47;
-  --color-navy-700: #1a2c5c;
-  --color-navy-600: #26407d;
-  --color-ink: #e8eeff;
-  --color-muted: #8d9cc7;
-  --color-faint: #5d6c96;
-  --color-coral: #ff5a6e;
-  --color-coral-soft: #ff8a98;
-  --color-amber: #f5b44a;
-  --font-sans: ui-sans-serif, -apple-system, BlinkMacSystemFont, "SF Pro Text", "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
+  --color-bg: #232428;
+  --color-card: #1c1d21;
+  --color-field: #141518;
+  --color-raised: #2d2f34;
+  --color-line: #303237;
+  --color-line-strong: #4f525a;
+  --color-ink: #f2f3f5;
+  --color-muted: #b5bac1;
+  --color-faint: #80848e;
+  --color-accent: #3b8cff;
+  --color-accent-soft: #7ab1ff;
+  --color-amber: #f0b232;
+  --font-sans: var(--font-geist), ui-sans-serif, -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
 }
 
 html {
@@ -21,20 +21,47 @@ html {
 }
 
 body {
-  background: var(--color-navy-800);
+  background: var(--color-bg);
   color: var(--color-ink);
 }
 
 @layer components {
   .input {
-    @apply w-full rounded-lg border border-navy-700 bg-navy-950 px-3 py-2.5 text-ink outline-none placeholder:text-faint focus:border-navy-600;
+    @apply w-full rounded-xl bg-field px-3.5 py-2.5 text-ink outline-none ring-1 ring-transparent transition placeholder:text-faint focus:ring-accent/70;
   }
 
   .btn-primary {
-    @apply rounded-lg bg-coral px-4 py-2.5 font-semibold text-white transition hover:bg-coral-soft disabled:opacity-50;
+    @apply rounded-xl bg-ink px-4 py-2.5 font-medium text-field transition hover:bg-white disabled:opacity-40;
   }
 
   .btn-quiet {
-    @apply rounded-lg border border-navy-700 px-3 py-2 text-sm text-ink transition hover:bg-navy-700 disabled:opacity-50;
+    @apply rounded-full bg-field px-3.5 py-1.5 text-sm text-ink transition hover:bg-raised disabled:opacity-40;
+  }
+
+  .pill {
+    @apply rounded-full bg-accent/15 px-3.5 py-1.5 text-sm font-medium whitespace-nowrap text-accent-soft transition hover:bg-accent/25 disabled:opacity-40;
+  }
+
+  .check {
+    appearance: none;
+    width: 1.375rem;
+    height: 1.375rem;
+    flex-shrink: 0;
+    cursor: pointer;
+    border-radius: 9999px;
+    border: 1.5px solid var(--color-line-strong);
+    transition: background-color 0.15s, border-color 0.15s;
+  }
+
+  .check:checked {
+    border-color: var(--color-accent);
+    background: var(--color-accent)
+      url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='none' stroke='white' stroke-width='2.2' stroke-linecap='round' stroke-linejoin='round'%3E%3Cpath d='M4 8.5l2.6 2.6L12 5.6'/%3E%3C/svg%3E")
+      center / 80% no-repeat;
+  }
+
+  .check:disabled {
+    cursor: default;
+    opacity: 0.3;
   }
 }

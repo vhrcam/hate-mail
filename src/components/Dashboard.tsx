@@ -39,7 +39,7 @@ const chips: [Filter, string][] = [
   ['unopened', 'Not opened in a year'],
   ['oneclick', 'One-click'],
 ]
-const colors = ['#3b6fd8', '#7c5cd6', '#c2549a', '#d07a2d', '#2f9e75', '#2a94b8', '#c94a5a', '#5b67d8']
+const colors = ['#0a84ff', '#5e5ce6', '#bf5af2', '#ff9f0a', '#30d158', '#40c8e0', '#ac8e68', '#8e8e93']
 const STALE = 15 * 60 * 1000
 
 const monthYear = (time: number) => new Date(time).toLocaleDateString('en-US', { month: 'short', year: 'numeric' })
@@ -282,61 +282,17 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
 
   return (
     <div className="min-h-screen">
-      <header className="border-b border-navy-700">
-        <div className="mx-auto max-w-5xl px-4 py-4">
-          <div className="flex items-center justify-between gap-3">
-            <h1 className="shrink-0 text-xl font-bold tracking-tight">Hate Mail</h1>
-            <nav className="flex min-w-0 items-center gap-2">
-              <button onClick={refresh} disabled={!!scan || !account} className="btn-quiet shrink-0">
-                Refresh
-              </button>
-              <div className="relative min-w-0">
-                <button
-                  onClick={() => setSwitcher(!switcher)}
-                  aria-expanded={switcher}
-                  className="btn-quiet flex max-w-[15rem] items-center gap-2"
-                >
-                  <span className="truncate">{account?.email ?? 'Accounts'}</span>
-                  <span aria-hidden className="text-muted">
-                    ▾
-                  </span>
-                </button>
-                {switcher && (
-                  <div className="absolute right-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-xl border border-navy-700 bg-navy-950 py-1 text-sm shadow-2xl">
-                    {accounts.map((a) => (
-                      <button key={a.id} onClick={() => (a.id === current ? setSwitcher(false) : switchTo(a.id))} className="flex w-full items-center gap-2 px-3 py-2.5 text-left hover:bg-navy-700">
-                        <span className="w-4 shrink-0 text-coral-soft">{a.id === current ? '✓' : ''}</span>
-                        <span className="min-w-0 flex-1 truncate">{a.email}</span>
-                        {a.needsReconnect && <span className="shrink-0 text-xs text-amber">Reconnect</span>}
-                      </button>
-                    ))}
-                    <div className="my-1 border-t border-navy-700" />
-                    <Link href="/connect" className="block px-3 py-2.5 pl-9 hover:bg-navy-700">
-                      Add another account
-                    </Link>
-                    <button
-                      onClick={() => {
-                        setSwitcher(false)
-                        setLeaving(true)
-                      }}
-                      className="block w-full px-3 py-2.5 pl-9 text-left text-muted hover:bg-navy-700 hover:text-ink"
-                    >
-                      Sign out of this account
-                    </button>
-                  </div>
-                )}
-              </div>
-            </nav>
-          </div>
-
-          <div className="mt-4 flex flex-wrap items-center gap-2">
-            <input
-              value={query}
-              onChange={(e) => setQuery(e.target.value)}
-              placeholder="Search senders"
-              aria-label="Search senders"
-              className="input w-full py-2 sm:w-auto sm:max-w-xs sm:flex-1"
-            />
+      <header>
+        <h1 className="sr-only">Hate Mail</h1>
+        <div className="mx-auto max-w-5xl px-4 pt-6 pb-2">
+          <div className="flex flex-wrap items-center gap-2">
+            <label className="relative min-w-0 basis-full sm:max-w-sm sm:flex-1 sm:basis-auto">
+              <svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-faint" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
+                <circle cx="11" cy="11" r="7" />
+                <path d="m20 20-3.5-3.5" />
+              </svg>
+              <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" aria-label="Search senders" className="input py-2 pl-9" />
+            </label>
             <select value={sort} onChange={(e) => setSort(e.target.value as keyof typeof sorts)} aria-label="Sort" className="input w-auto py-2">
               {Object.entries(sorts).map(([key, label]) => (
                 <option key={key} value={key}>
@@ -344,16 +300,60 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                 </option>
               ))}
             </select>
+            <div className="ml-auto flex items-center gap-2">
+              <button onClick={refresh} disabled={!!scan || !account} className="btn-quiet shrink-0">
+                Refresh
+              </button>
+              <div className="relative min-w-0">
+                <button
+                  onClick={() => setSwitcher(!switcher)}
+                  aria-expanded={switcher}
+                  className="btn-quiet flex max-w-[15rem] items-center gap-2 py-1 pl-1"
+                >
+                  {account && <Initial text={account.email} />}
+                  <span className="hidden truncate sm:inline">{account?.email ?? 'Accounts'}</span>
+                  <span aria-hidden className="text-muted">
+                    ▾
+                  </span>
+                </button>
+                {switcher && (
+                  <div className="absolute right-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl bg-field/95 text-sm shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
+                    <div className="divide-y divide-line">
+                      {accounts.map((a) => (
+                        <button key={a.id} onClick={() => (a.id === current ? setSwitcher(false) : switchTo(a.id))} className="flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-white/5">
+                          <Initial text={a.email} />
+                          <span className="min-w-0 flex-1 truncate">{a.email}</span>
+                          {a.needsReconnect && <span className="shrink-0 text-xs text-amber">Reconnect</span>}
+                          {a.id === current && <span className="shrink-0 text-accent-soft">✓</span>}
+                        </button>
+                      ))}
+                    </div>
+                    <div className="divide-y divide-line border-t-8 border-black/25">
+                      <Link href="/connect" className="block px-3.5 py-3 hover:bg-white/5">
+                        Add Account
+                      </Link>
+                      <button
+                        onClick={() => {
+                          setSwitcher(false)
+                          setLeaving(true)
+                        }}
+                        className="block w-full px-3.5 py-3 text-left hover:bg-white/5"
+                      >
+                        Sign Out
+                      </button>
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
           </div>
 
-          <div className="mt-3 flex flex-wrap gap-2">
+          <div className="mt-3 inline-flex max-w-full rounded-xl bg-field p-1">
             {chips.map(([key, label]) => (
               <button
                 key={key}
                 onClick={() => setFilter(key)}
-                className={`rounded-full border px-3 py-1 text-sm transition ${
-                  filter === key ? 'border-ink bg-ink text-navy-900' : 'border-navy-700 text-muted hover:text-ink'
-                }`}
+                className={`rounded-lg px-3 py-1.5 text-sm whitespace-nowrap transition ${filter === key ? 'bg-raised font-medium text-ink shadow' : 'text-muted hover:text-ink'}`}
               >
                 {label}
               </button>
@@ -364,7 +364,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
 
       <main className="mx-auto max-w-5xl px-4 pb-36 pt-4">
         {account?.needsReconnect && (
-          <div className="mb-3 flex items-center justify-between gap-3 rounded-xl border border-amber/40 bg-amber/10 px-4 py-3 text-sm">
+          <div className="mb-3 flex items-center justify-between gap-3 rounded-2xl bg-amber/10 px-4 py-3 text-sm">
             <span className="min-w-0">Hate Mail lost access to {account.email}. Connect it again to keep going.</span>
             <a
               href={account.oauth ? `/api/oauth/${account.provider}?email=${encodeURIComponent(account.email)}` : `/connect?email=${encodeURIComponent(account.email)}`}
@@ -376,17 +376,17 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
         )}
 
         {scan?.first && (
-          <div className="mb-4 rounded-xl border border-navy-700 bg-navy-900 p-4">
+          <div className="mb-4 rounded-2xl bg-card p-4">
             <div className="flex items-baseline justify-between gap-3 text-sm">
               <p className="min-w-0 truncate">
-                Scanning <span className="font-semibold">{account?.email}</span>
+                Scanning <span className="font-medium">{account?.email}</span>
               </p>
               <p className="shrink-0 text-muted">
                 {scan.total ? `${scan.scanned.toLocaleString()} of ${scan.total.toLocaleString()} emails` : 'Starting…'}
               </p>
             </div>
-            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-navy-700">
-              <div className="h-full rounded-full bg-coral transition-all" style={{ width: `${scan.total ? Math.max(3, (scan.scanned / scan.total) * 100) : 3}%` }} />
+            <div className="mt-3 h-1.5 overflow-hidden rounded-full bg-line">
+              <div className="h-full rounded-full bg-accent transition-all" style={{ width: `${scan.total ? Math.max(3, (scan.scanned / scan.total) * 100) : 3}%` }} />
             </div>
             <p className="mt-2 text-xs text-muted">Only senders and dates are read. Big inboxes can take a few minutes.</p>
           </div>
@@ -399,7 +399,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                 type="checkbox"
                 checked={allSelected}
                 onChange={() => setSelected(allSelected ? new Set() : new Set(selectable.map((s) => s.id)))}
-                className="h-4 w-4 accent-coral"
+                className="check"
               />
               Select all
             </label>
@@ -417,7 +417,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
             return (
               <li
                 key={s.id}
-                className={`flex flex-wrap items-start gap-x-3 gap-y-2 rounded-xl border border-navy-700 bg-navy-900 px-3 py-3 transition sm:px-4 md:flex-nowrap md:items-center ${done ? 'opacity-50' : ''}`}
+                className={`flex flex-wrap items-start gap-x-3 gap-y-2 rounded-2xl bg-card px-3 py-3 transition sm:px-4 md:flex-nowrap md:items-center ${done ? 'opacity-45' : ''}`}
               >
                 <input
                   type="checkbox"
@@ -425,14 +425,14 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                   checked={selected.has(s.id)}
                   onChange={() => toggle(s.id)}
                   aria-label={`Select ${s.name}`}
-                  className="mt-3 h-4 w-4 shrink-0 accent-coral md:mt-0"
+                  className="check mt-2.5 md:mt-0"
                 />
                 <Logo domain={s.domain} name={s.name} />
 
                 <div className="min-w-0 flex-1 md:flex md:items-center md:gap-6">
                   <div className="min-w-0 md:flex-1">
                     <div className="flex items-center gap-2">
-                      <p className="truncate font-semibold">{s.name}</p>
+                      <p className="truncate font-medium">{s.name}</p>
                       {s.status === 'still-sending' && (
                         <span className="shrink-0 rounded-full bg-amber/15 px-2 py-0.5 text-xs font-medium text-amber">Still sending</span>
                       )}
@@ -444,15 +444,11 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                   </p>
                 </div>
 
-                <div className="order-last w-full pl-20 md:order-none md:w-44 md:shrink-0 md:pl-0 md:text-right">
+                <div className="order-last w-full pl-[5.375rem] md:order-none md:w-44 md:shrink-0 md:pl-0 md:text-right">
                   {done ? (
                     <span className="px-1 text-sm text-muted">✓ Unsubscribed</span>
                   ) : (
-                    <button
-                      disabled={working}
-                      onClick={() => unsubscribe(s)}
-                      className="rounded-full border border-coral/70 px-3 py-1.5 text-sm font-medium whitespace-nowrap text-coral-soft transition hover:bg-coral hover:text-white disabled:opacity-50"
-                    >
+                    <button disabled={working} onClick={() => unsubscribe(s)} className="pill">
                       {working ? 'Working…' : s.status === 'still-sending' ? 'Unsubscribe again' : 'Unsubscribe'}
                       {!working && s.method !== 'auto' ? ' ↗' : ''}
                     </button>
@@ -474,9 +470,9 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
 
       {selected.size > 0 && (
         <div className="fixed inset-x-0 bottom-4 z-30 px-4">
-          <div className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl border border-navy-600 bg-navy-950/95 px-4 py-3 shadow-2xl backdrop-blur">
+          <div className="mx-auto flex max-w-xl items-center gap-3 rounded-2xl bg-field/95 px-4 py-3 shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
             <span className="mr-auto text-sm font-medium">{selected.size} selected</span>
-            <button onClick={unsubscribeSelected} className="rounded-full bg-coral px-4 py-1.5 text-sm font-semibold text-white transition hover:bg-coral-soft">
+            <button onClick={unsubscribeSelected} className="rounded-full bg-ink px-4 py-1.5 text-sm font-medium text-field transition hover:bg-white">
               Unsubscribe
             </button>
             <button onClick={() => setSelected(new Set())} className="px-2 text-sm text-muted hover:text-ink">
@@ -488,7 +484,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
 
       {toast && (
         <div className={`fixed inset-x-0 z-40 flex justify-center px-4 ${selected.size ? 'bottom-24' : 'bottom-6'}`}>
-          <p role="status" className="max-w-xl rounded-xl border border-navy-600 bg-navy-950 px-4 py-3 text-sm shadow-2xl">
+          <p role="status" className="max-w-xl rounded-2xl bg-field/95 px-4 py-3 text-sm shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
             {toast}
           </p>
         </div>
@@ -496,21 +492,32 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
 
       {leaving && account && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60 px-4" onClick={() => setLeaving(false)}>
-          <div role="dialog" aria-modal="true" className="w-full max-w-sm rounded-2xl border border-navy-700 bg-navy-900 p-6" onClick={(e) => e.stopPropagation()}>
-            <h2 className="text-lg font-semibold">Sign out of {account.email}?</h2>
-            <p className="mt-2 text-sm text-muted">Hate Mail forgets this account and its senders on this device. Nothing in your mailbox changes.</p>
-            <div className="mt-6 flex justify-end gap-2">
-              <button onClick={() => setLeaving(false)} className="btn-quiet">
+          <div role="dialog" aria-modal="true" className="w-full max-w-[17rem] overflow-hidden rounded-2xl bg-field/95 text-center shadow-2xl ring-1 ring-white/5 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
+            <div className="px-4 pt-5 pb-4">
+              <h2 className="font-medium">Sign out of {account.email}?</h2>
+              <p className="mt-1 text-sm text-muted">Hate Mail forgets this account and its senders on this device. Nothing in your mailbox changes.</p>
+            </div>
+            <div className="grid grid-cols-2 divide-x divide-line border-t border-line">
+              <button onClick={() => setLeaving(false)} className="py-3 text-accent-soft hover:bg-white/5">
                 Cancel
               </button>
-              <button onClick={signOut} autoFocus className="btn-primary py-2 text-sm">
-                Sign out
+              <button onClick={signOut} autoFocus className="py-3 font-medium text-accent-soft hover:bg-white/5">
+                Sign Out
               </button>
             </div>
           </div>
         </div>
       )}
     </div>
+  )
+}
+
+function Initial({ text }: { text: string }) {
+  const color = colors[[...text].reduce((sum, ch) => sum + ch.charCodeAt(0), 0) % colors.length]
+  return (
+    <span aria-hidden className="flex h-7 w-7 shrink-0 items-center justify-center rounded-full text-xs font-semibold text-white" style={{ background: color }}>
+      {text.charAt(0).toUpperCase()}
+    </span>
   )
 }
 
