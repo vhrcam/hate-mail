@@ -48,7 +48,7 @@ body {
   }
 
   .pill {
-    @apply rounded-full bg-accent/15 px-3.5 py-1.5 text-sm font-medium whitespace-nowrap text-accent-soft transition hover:bg-accent/25 disabled:opacity-40;
+    @apply rounded-full bg-raised px-3.5 py-1.5 text-sm font-medium whitespace-nowrap text-ink transition hover:bg-line-strong/70 disabled:opacity-40;
   }
 
   .check {
