@@ -284,7 +284,50 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
     <div className="min-h-screen">
       <header>
         <h1 className="sr-only">Hate Mail</h1>
-        <div className="mx-auto max-w-5xl px-4 pt-6 pb-2">
+        <div className="flex justify-end px-4 pt-4 sm:px-6">
+          <div className="relative min-w-0">
+            <button
+              onClick={() => setSwitcher(!switcher)}
+              aria-expanded={switcher}
+              className="btn-quiet flex max-w-[15rem] items-center gap-2 py-1 pl-1"
+            >
+              {account && <Initial text={account.email} />}
+              <span className="truncate">{account?.email ?? 'Accounts'}</span>
+              <span aria-hidden className="text-muted">
+                ▾
+              </span>
+            </button>
+            {switcher && (
+              <div className="absolute right-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl bg-field/95 text-sm shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
+                <div className="divide-y divide-line">
+                  {accounts.map((a) => (
+                    <button key={a.id} onClick={() => (a.id === current ? setSwitcher(false) : switchTo(a.id))} className="flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-white/5">
+                      <Initial text={a.email} />
+                      <span className="min-w-0 flex-1 truncate">{a.email}</span>
+                      {a.needsReconnect && <span className="shrink-0 text-xs text-amber">Reconnect</span>}
+                      {a.id === current && <span className="shrink-0 text-accent-soft">✓</span>}
+                    </button>
+                  ))}
+                </div>
+                <div className="divide-y divide-line border-t-8 border-black/25">
+                  <Link href="/connect" className="block px-3.5 py-3 hover:bg-white/5">
+                    Add Account
+                  </Link>
+                  <button
+                    onClick={() => {
+                      setSwitcher(false)
+                      setLeaving(true)
+                    }}
+                    className="block w-full px-3.5 py-3 text-left hover:bg-white/5"
+                  >
+                    Sign Out
+                  </button>
+                </div>
+              </div>
+            )}
+          </div>
+        </div>
+        <div className="mx-auto max-w-5xl px-4 pt-2 pb-2">
           <div className="flex flex-wrap items-center gap-2">
             <label className="relative min-w-0 basis-full sm:max-w-sm sm:flex-1 sm:basis-auto">
               <svg aria-hidden viewBox="0 0 24 24" className="pointer-events-none absolute top-1/2 left-3 h-4 w-4 -translate-y-1/2 text-faint" fill="none" stroke="currentColor" strokeWidth="2.4" strokeLinecap="round">
@@ -300,52 +343,9 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                 </option>
               ))}
             </select>
-            <div className="ml-auto flex items-center gap-2">
-              <button onClick={refresh} disabled={!!scan || !account} className="btn-quiet shrink-0">
-                Refresh
-              </button>
-              <div className="relative min-w-0">
-                <button
-                  onClick={() => setSwitcher(!switcher)}
-                  aria-expanded={switcher}
-                  className="btn-quiet flex max-w-[15rem] items-center gap-2 py-1 pl-1"
-                >
-                  {account && <Initial text={account.email} />}
-                  <span className="hidden truncate sm:inline">{account?.email ?? 'Accounts'}</span>
-                  <span aria-hidden className="text-muted">
-                    ▾
-                  </span>
-                </button>
-                {switcher && (
-                  <div className="absolute right-0 top-full z-30 mt-2 w-72 max-w-[calc(100vw-2rem)] overflow-hidden rounded-2xl bg-field/95 text-sm shadow-2xl ring-1 ring-white/5 backdrop-blur-xl">
-                    <div className="divide-y divide-line">
-                      {accounts.map((a) => (
-                        <button key={a.id} onClick={() => (a.id === current ? setSwitcher(false) : switchTo(a.id))} className="flex w-full items-center gap-3 px-3.5 py-3 text-left hover:bg-white/5">
-                          <Initial text={a.email} />
-                          <span className="min-w-0 flex-1 truncate">{a.email}</span>
-                          {a.needsReconnect && <span className="shrink-0 text-xs text-amber">Reconnect</span>}
-                          {a.id === current && <span className="shrink-0 text-accent-soft">✓</span>}
-                        </button>
-                      ))}
-                    </div>
-                    <div className="divide-y divide-line border-t-8 border-black/25">
-                      <Link href="/connect" className="block px-3.5 py-3 hover:bg-white/5">
-                        Add Account
-                      </Link>
-                      <button
-                        onClick={() => {
-                          setSwitcher(false)
-                          setLeaving(true)
-                        }}
-                        className="block w-full px-3.5 py-3 text-left hover:bg-white/5"
-                      >
-                        Sign Out
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
-            </div>
+            <button onClick={refresh} disabled={!!scan || !account} className="btn-quiet ml-auto shrink-0">
+              Refresh
+            </button>
           </div>
 
           <div className="mt-3 inline-flex max-w-full rounded-xl bg-field p-1">
