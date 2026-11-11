@@ -293,7 +293,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
               </svg>
               <input value={query} onChange={(e) => setQuery(e.target.value)} placeholder="Search" aria-label="Search senders" className="input py-2 pl-9" />
             </label>
-            <select value={sort} onChange={(e) => setSort(e.target.value as keyof typeof sorts)} aria-label="Sort" className="input w-auto py-2">
+            <select value={sort} onChange={(e) => setSort(e.target.value as keyof typeof sorts)} aria-label="Sort" className="input select w-auto py-2">
               {Object.entries(sorts).map(([key, label]) => (
                 <option key={key} value={key}>
                   {label}
