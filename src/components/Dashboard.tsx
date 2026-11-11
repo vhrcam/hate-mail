@@ -343,8 +343,11 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                 </option>
               ))}
             </select>
-            <button onClick={refresh} disabled={!!scan || !account} className="btn-quiet ml-auto shrink-0">
-              Refresh
+            <button onClick={refresh} disabled={!!scan || !account} aria-label="Refresh" title="Refresh" className="input w-auto shrink-0 px-2.5 py-2.5 text-muted hover:text-ink disabled:opacity-40">
+              <svg aria-hidden viewBox="0 0 24 24" className={`h-5 w-5 ${scan ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
+                <path d="M20 4v5h-5" />
+              </svg>
             </button>
           </div>
 
