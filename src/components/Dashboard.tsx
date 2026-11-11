@@ -309,7 +309,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                     </button>
                   ))}
                 </div>
-                <div className="divide-y divide-line border-t-8 border-black/25">
+                <div className="divide-y divide-line border-t border-line">
                   <Link href="/connect" className="block px-3.5 py-3 hover:bg-white/5">
                     Add Account
                   </Link>
