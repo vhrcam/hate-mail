@@ -310,7 +310,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                   ))}
                 </div>
                 <div className="divide-y divide-line border-t border-line">
-                  <Link href="/connect" className="block px-3.5 py-3 hover:bg-white/5">
+                  <Link href="/connect" onClick={() => setSwitcher(false)} className="block px-3.5 py-3 hover:bg-white/5">
                     Add Account
                   </Link>
                   <button
