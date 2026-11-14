@@ -38,7 +38,7 @@ The menu at the top right shows the account you're looking at. Open it to switch
 ## Good to know
 
 - **Your mailbox stays as it is.** Folders are opened read-only, so nothing is moved, deleted or marked as read. The only thing Hate Mail does in your account is send an unsubscribe email when a sender asks for one.
-- **What's saved:** sender names and addresses, email counts per month, and each sender's latest unsubscribe link, in a SQLite database in `data/`. Subjects and message text are never saved.
+- **What's saved:** sender names and addresses, email counts per month, and each sender's latest unsubscribe link, in a SQLite database (a file in `data/` on your own computer, or [Turso](https://turso.tech) when hosted). Subjects and message text are never saved.
 - **Encryption:** app passwords and sign-in tokens are encrypted with AES-256-GCM.
 - **Logos** come from Google's public favicon service, which sees your senders' website names. It never sees your email address.
 - **Safety:** unsubscribe requests that Hate Mail sends itself only go to public HTTPS addresses.
@@ -65,6 +65,7 @@ Copy `.env.example` to `.env.local` and fill in what you need:
 | Setting | What it's for |
 | --- | --- |
 | `ENCRYPTION_KEY` | Encrypts saved passwords and sign-in tokens. Optional on your own computer (Hate Mail makes one in `data/secret.key`), required on a server. Make one with `openssl rand -base64 32`. |
+| `TURSO_DATABASE_URL`, `TURSO_AUTH_TOKEN` | A [Turso](https://turso.tech) database. Leave them empty to use a file in `data/`. Required on Vercel, which can't keep files. |
 | `APP_URL` | The address Hate Mail runs at. Google and Microsoft send you back here after you sign in. |
 | `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` | Continue with Google |
 | `MICROSOFT_CLIENT_ID`, `MICROSOFT_CLIENT_SECRET` | Continue with Microsoft |
@@ -98,4 +99,4 @@ They cover header parsing, finding unsubscribe links, the monthly email counts, 
 
 ## Built with
 
-Next.js 16, React 19, TypeScript, Tailwind CSS 4, SQLite (better-sqlite3), ImapFlow, Nodemailer and mailparser.
+Next.js 16, React 19, TypeScript, Tailwind CSS 4, SQLite (libSQL, Turso), ImapFlow, Nodemailer and mailparser.
