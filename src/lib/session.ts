@@ -51,7 +51,10 @@ export function signIn(req: NextRequest, accountId: number) {
     db().prepare('insert into sessions (token_hash, expires_at) values (?, ?)').run(sha256(token), Date.now() + MAX_AGE * 1000)
   }
   db().prepare('insert or ignore into session_accounts (token_hash, account_id, added_at) values (?, ?, ?)').run(sha256(token), accountId, Date.now())
-  db().prepare('delete from sessions where expires_at < ?').run(Date.now())
+  const now = Date.now()
+  db().prepare('delete from session_accounts where token_hash in (select token_hash from sessions where expires_at < ?)').run(now)
+  db().prepare('delete from sessions where expires_at < ?').run(now)
+  db().prepare('delete from senders where account_id not in (select account_id from session_accounts)').run()
   db().prepare('delete from accounts where id not in (select account_id from session_accounts)').run()
   return token
 }
@@ -63,7 +66,10 @@ export function extendSession(session: Session) {
 export function signOut(session: Session, accountId: number) {
   const conn = db()
   conn.prepare('delete from session_accounts where token_hash = ? and account_id = ?').run(session.hash, accountId)
-  if (!conn.prepare('select 1 from session_accounts where account_id = ?').get(accountId)) conn.prepare('delete from accounts where id = ?').run(accountId)
+  if (!conn.prepare('select 1 from session_accounts where account_id = ?').get(accountId)) {
+    conn.prepare('delete from senders where account_id = ?').run(accountId)
+    conn.prepare('delete from accounts where id = ?').run(accountId)
+  }
   const left = session.accountIds.filter((id) => id !== accountId).length
   if (!left) conn.prepare('delete from sessions where token_hash = ?').run(session.hash)
   return left
