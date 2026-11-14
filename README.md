@@ -2,13 +2,15 @@
 
 A web app that finds every mailing list sending you email and lets you unsubscribe from the ones you don't want.
 
+**Live at [hate-mail.vercel.app](https://hate-mail.vercel.app)**
+
 Most people have used the same email address for ten years or more, and in that time it lands on hundreds of lists: stores you bought from once, apps you tried, newsletters you never read. Unsubscribing one email at a time never keeps up. Hate Mail connects to your mailbox, finds everyone sending you bulk email, and lists them in one place, with the date their first email arrived and an unsubscribe button on each one.
 
 ## Sign in
 
 There's no Hate Mail password. Pick your email provider from the list and sign in, and you stay signed in on that browser.
 
-- **Google and Outlook:** go to Google's or Microsoft's own sign-in page once the sign-in keys are set up (see [Setup](#setup)). Until then, Google accounts use an app password.
+- **Google and Outlook:** go to Google's or Microsoft's own sign-in page once the sign-in keys are set up (see [Setup](#setup)). Until then, Google accounts use an app password. On the live site, Google sign-in is still in Google's Testing mode, so it only works for accounts added as test users. Everyone else can use an app password.
 - **iCloud, Yahoo and AOL:** use an app password. Hate Mail shows the steps for your provider, with a link to the right settings page.
 - **Other email:** type your address and Hate Mail looks up the server settings for your domain. School and work accounts that run on Google or Microsoft go to the right sign-in. You can change the settings under Server settings.
 - **Proton Mail** can't connect. Proton only lets other apps in through Proton Bridge, a desktop app.
@@ -79,6 +81,7 @@ Copy `.env.example` to `.env.local` and fill in what you need:
    - Data Access: add the scope `https://mail.google.com/`.
    - Clients: create a **Web application** client with the redirect URI `http://localhost:3000/api/oauth/google/callback`.
 4. Put the client ID and secret in `.env.local` and restart `npm run dev`.
+5. When the app is online, add its callback too, like `https://hate-mail.vercel.app/api/oauth/google/callback`.
 
 ### Continue with Microsoft
 
@@ -88,6 +91,26 @@ Copy `.env.example` to `.env.local` and fill in what you need:
 4. Under Certificates & secrets, create a client secret and copy its value.
 5. Under API permissions, add the Microsoft Graph delegated permissions `IMAP.AccessAsUser.All`, `SMTP.Send`, `offline_access`, `openid` and `email`.
 6. Put the Application (client) ID and the secret in `.env.local` and restart.
+
+### Put it online
+
+The live site runs on [Vercel](https://vercel.com). Vercel can't keep files between requests, so the online version saves its data in a [Turso](https://turso.tech) database instead of `data/`. Both have free plans.
+
+1. Make the database with the [Turso CLI](https://docs.turso.tech/cli/installation):
+   ```
+   turso db create hate-mail
+   turso db show hate-mail --url
+   turso db tokens create hate-mail
+   ```
+2. In the Vercel project's settings, add these environment variables:
+   - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` from step 1
+   - a new `ENCRYPTION_KEY`
+   - `APP_URL`, the site's address, like `https://hate-mail.vercel.app`
+   - the Google or Microsoft keys, if you use them
+3. Deploy with `npx vercel deploy --prod`, or import the repo on vercel.com.
+4. Add the site's callback address to your Google or Microsoft sign-in keys (see above).
+
+`.vercelignore` keeps `data/` and `.env` files out of uploads.
 
 ## Tests
 
