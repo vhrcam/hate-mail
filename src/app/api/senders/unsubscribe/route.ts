@@ -2,6 +2,8 @@ import type { NextRequest } from 'next/server'
 import { apiSession, notSignedIn } from '@/lib/session'
 import { unsubscribe } from '@/lib/unsubscribe'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   const session = await apiSession(req)
   const body = await req.json()

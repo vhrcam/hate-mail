@@ -4,6 +4,8 @@ import { errorText } from '@/lib/mail'
 import { scanAccount } from '@/lib/scan'
 import { apiSession, notSignedIn } from '@/lib/session'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest, ctx: RouteContext<'/api/accounts/[id]/scan'>) {
   const session = await apiSession(req)
   const id = Number((await ctx.params).id)

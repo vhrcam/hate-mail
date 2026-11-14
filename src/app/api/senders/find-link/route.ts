@@ -4,6 +4,8 @@ import { senderAccount } from '@/lib/senders'
 import { apiSession, notSignedIn } from '@/lib/session'
 import { findLink } from '@/lib/unsubscribe'
 
+export const maxDuration = 60
+
 export async function POST(req: NextRequest) {
   const session = await apiSession(req)
   const id = Number((await req.json()).id)
