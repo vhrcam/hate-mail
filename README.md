@@ -2,7 +2,7 @@
 
 A web app that finds every mailing list sending you email and lets you unsubscribe from the ones you don't want.
 
-**Live at [hate-mail.vercel.app](https://hate-mail.vercel.app)**
+**Live at [hatemail.vercel.app](https://hatemail.vercel.app)**
 
 Most people have used the same email address for ten years or more, and in that time it lands on hundreds of lists: stores you bought from once, apps you tried, newsletters you never read. Unsubscribing one email at a time never keeps up. Hate Mail connects to your mailbox, finds everyone sending you bulk email, and lists them in one place, with the date their first email arrived and an unsubscribe button on each one.
 
@@ -81,7 +81,7 @@ Copy `.env.example` to `.env.local` and fill in what you need:
    - Data Access: add the scope `https://mail.google.com/`.
    - Clients: create a **Web application** client with the redirect URI `http://localhost:3000/api/oauth/google/callback`.
 4. Put the client ID and secret in `.env.local` and restart `npm run dev`.
-5. When the app is online, add its callback too, like `https://hate-mail.vercel.app/api/oauth/google/callback`.
+5. When the app is online, add its callback too, like `https://hatemail.vercel.app/api/oauth/google/callback`.
 
 ### Continue with Microsoft
 
@@ -105,7 +105,7 @@ The live site runs on [Vercel](https://vercel.com). Vercel can't keep files betw
 2. In the Vercel project's settings, add these environment variables:
    - `TURSO_DATABASE_URL` and `TURSO_AUTH_TOKEN` from step 1
    - a new `ENCRYPTION_KEY`
-   - `APP_URL`, the site's address, like `https://hate-mail.vercel.app`
+   - `APP_URL`, the site's address, like `https://hatemail.vercel.app`
    - the Google or Microsoft keys, if you use them
 3. Deploy with `npx vercel deploy --prod`, or import the repo on vercel.com.
 4. Add the site's callback address to your Google or Microsoft sign-in keys (see above).
