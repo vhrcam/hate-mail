@@ -1,5 +1,5 @@
 import crypto from 'node:crypto'
-import { db, type Account } from './db'
+import { run, type Account } from './db'
 import { decrypt, encrypt } from './crypto'
 
 export function oauthConfig(name: string) {
@@ -59,12 +59,13 @@ export async function accessToken(account: Account) {
   const extra: Record<string, string> = account.provider === 'microsoft' ? { scope: oauthConfig('microsoft')!.scope } : {}
   const { ok, data } = await tokenRequest(account.provider, { grant_type: 'refresh_token', refresh_token: decrypt(account.secret), ...extra })
   if (!ok) {
-    if (data.error === 'invalid_grant') db().prepare('update accounts set needs_reconnect = 1 where id = ?').run(account.id)
+    if (data.error === 'invalid_grant') await run('update accounts set needs_reconnect = 1 where id = ?', account.id)
     throw new Error(data.error === 'invalid_grant' ? 'This account needs to be reconnected.' : `Sign-in refresh failed (${data.error}).`)
   }
 
-  db()
-    .prepare('update accounts set access_token = ?, access_expires = ?, secret = ? where id = ?')
-    .run(encrypt(data.access_token), Date.now() + data.expires_in * 1000, data.refresh_token ? encrypt(data.refresh_token) : account.secret, account.id)
+  await run(
+    'update accounts set access_token = ?, access_expires = ?, secret = ? where id = ?',
+    encrypt(data.access_token), Date.now() + data.expires_in * 1000, data.refresh_token ? encrypt(data.refresh_token) : account.secret, account.id,
+  )
   return data.access_token as string
 }

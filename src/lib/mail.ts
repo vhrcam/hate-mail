@@ -1,6 +1,6 @@
 import { AuthenticationFailure, ImapFlow } from 'imapflow'
 import nodemailer from 'nodemailer'
-import { db, type Account } from './db'
+import { run, type Account } from './db'
 import { decrypt } from './crypto'
 import { accessToken } from './oauth'
 
@@ -19,7 +19,7 @@ export async function openImap(account: Account) {
     await client.connect()
   } catch (e) {
     if (e instanceof AuthenticationFailure) {
-      db().prepare('update accounts set needs_reconnect = 1 where id = ?').run(account.id)
+      await run('update accounts set needs_reconnect = 1 where id = ?', account.id)
       throw new Error('This account needs to be reconnected.')
     }
     throw e

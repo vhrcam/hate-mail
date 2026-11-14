@@ -1,16 +1,14 @@
-import Database from 'better-sqlite3'
+import { createClient, type Client, type InValue, type ResultSet } from '@libsql/client'
 import fs from 'node:fs'
 import path from 'node:path'
 
-const VERSION = 2
-
 const schema = `
-create table sessions (
+create table if not exists sessions (
   token_hash text primary key,
   expires_at integer not null
 );
 
-create table accounts (
+create table if not exists accounts (
   id integer primary key,
   email text not null,
   provider text not null,
@@ -30,14 +28,14 @@ create table accounts (
   unique (email, imap_host, imap_port)
 );
 
-create table session_accounts (
+create table if not exists session_accounts (
   token_hash text not null references sessions(token_hash) on delete cascade,
   account_id integer not null references accounts(id) on delete cascade,
   added_at integer not null,
   primary key (token_hash, account_id)
 );
 
-create table senders (
+create table if not exists senders (
   id integer primary key,
   account_id integer not null references accounts(id) on delete cascade,
   address text not null,
@@ -58,24 +56,37 @@ create table senders (
 );
 `
 
-const g = globalThis as unknown as { hateMailDb?: Database.Database }
+const g = globalThis as unknown as { hateMailDb?: Promise<Client> }
 
-export function db() {
-  if (!g.hateMailDb) {
+async function open() {
+  let url = process.env.TURSO_DATABASE_URL
+  if (!url) {
     const dir = path.join(process.cwd(), 'data')
     fs.mkdirSync(dir, { recursive: true })
-    const conn = new Database(path.join(dir, 'hate-mail.db'))
-    conn.pragma('journal_mode = WAL')
-    conn.pragma('foreign_keys = ON')
-    if (conn.pragma('user_version', { simple: true }) !== VERSION) {
-      for (const table of ['sender_accounts', 'senders', 'session_accounts', 'sessions', 'accounts', 'users']) conn.exec(`drop table if exists ${table}`)
-      conn.exec(schema)
-      conn.pragma(`user_version = ${VERSION}`)
-    }
-    g.hateMailDb = conn
+    url = `file:${path.join(dir, 'hate-mail.db')}`
   }
+  const client = createClient({ url, authToken: process.env.TURSO_AUTH_TOKEN })
+  await client.executeMultiple(schema)
+  return client
+}
+
+export function db() {
+  g.hateMailDb ??= open().catch((e) => {
+    g.hateMailDb = undefined
+    throw e
+  })
   return g.hateMailDb
 }
+
+const plain = (r: ResultSet) => r.rows.map((row) => Object.fromEntries(r.columns.map((c, i) => [c, row[i]])))
+
+export const all = async <T>(sql: string, ...args: InValue[]) => plain(await (await db()).execute({ sql, args })) as T[]
+
+export const get = async <T>(sql: string, ...args: InValue[]) => (await all<T>(sql, ...args))[0] as T | undefined
+
+export const run = async (sql: string, ...args: InValue[]) => (await db()).execute({ sql, args })
+
+export const batch = async (statements: [string, InValue[]?][]) => (await db()).batch(statements, 'write')
 
 export type Account = {
   id: number
@@ -95,6 +106,4 @@ export type Account = {
   needs_reconnect: number
 }
 
-export function getAccount(id: number) {
-  return db().prepare('select * from accounts where id = ?').get(id) as Account | undefined
-}
+export const getAccount = (id: number) => get<Account>('select * from accounts where id = ?', id)

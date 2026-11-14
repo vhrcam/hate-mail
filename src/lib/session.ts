@@ -1,6 +1,6 @@
 import { cookies } from 'next/headers'
 import { connection, type NextRequest } from 'next/server'
-import { db } from './db'
+import { all, batch, get, run } from './db'
 import { randomToken, sha256 } from './crypto'
 
 export const SESSION_COOKIE = 'hm_session'
@@ -20,12 +20,12 @@ export function sessionCookie(token: string) {
   }
 }
 
-function load(token?: string): Session | null {
+async function load(token?: string): Promise<Session | null> {
   if (!token) return null
   const hash = sha256(token)
-  const row = db().prepare('select expires_at from sessions where token_hash = ?').get(hash) as { expires_at: number } | undefined
+  const row = await get<{ expires_at: number }>('select expires_at from sessions where token_hash = ?', hash)
   if (!row || row.expires_at < Date.now()) return null
-  const rows = db().prepare('select account_id from session_accounts where token_hash = ? order by added_at').all(hash) as { account_id: number }[]
+  const rows = await all<{ account_id: number }>('select account_id from session_accounts where token_hash = ? order by added_at', hash)
   return { token, hash, accountIds: rows.map((r) => r.account_id) }
 }
 
@@ -39,39 +39,44 @@ export function sameOrigin(req: NextRequest) {
   return !!origin && new URL(origin).host === req.headers.get('host')
 }
 
-export function apiSession(req: NextRequest) {
+export async function apiSession(req: NextRequest) {
   if (req.method !== 'GET' && !sameOrigin(req)) return null
   return load(req.cookies.get(SESSION_COOKIE)?.value)
 }
 
-export function signIn(req: NextRequest, accountId: number) {
-  let token = load(req.cookies.get(SESSION_COOKIE)?.value)?.token
+export async function signIn(req: NextRequest, accountId: number) {
+  const now = Date.now()
+  let token = (await load(req.cookies.get(SESSION_COOKIE)?.value))?.token
+  const create: [string, (string | number)[]][] = []
   if (!token) {
     token = randomToken()
-    db().prepare('insert into sessions (token_hash, expires_at) values (?, ?)').run(sha256(token), Date.now() + MAX_AGE * 1000)
+    create.push(['insert into sessions (token_hash, expires_at) values (?, ?)', [sha256(token), now + MAX_AGE * 1000]])
   }
-  db().prepare('insert or ignore into session_accounts (token_hash, account_id, added_at) values (?, ?, ?)').run(sha256(token), accountId, Date.now())
-  const now = Date.now()
-  db().prepare('delete from session_accounts where token_hash in (select token_hash from sessions where expires_at < ?)').run(now)
-  db().prepare('delete from sessions where expires_at < ?').run(now)
-  db().prepare('delete from senders where account_id not in (select account_id from session_accounts)').run()
-  db().prepare('delete from accounts where id not in (select account_id from session_accounts)').run()
+  await batch([
+    ...create,
+    ['insert or ignore into session_accounts (token_hash, account_id, added_at) values (?, ?, ?)', [sha256(token), accountId, now]],
+    ['delete from session_accounts where token_hash in (select token_hash from sessions where expires_at < ?)', [now]],
+    ['delete from sessions where expires_at < ?', [now]],
+    ['delete from senders where account_id not in (select account_id from session_accounts)'],
+    ['delete from accounts where id not in (select account_id from session_accounts)'],
+  ])
   return token
 }
 
-export function extendSession(session: Session) {
-  db().prepare('update sessions set expires_at = ? where token_hash = ?').run(Date.now() + MAX_AGE * 1000, session.hash)
+export async function extendSession(session: Session) {
+  await run('update sessions set expires_at = ? where token_hash = ?', Date.now() + MAX_AGE * 1000, session.hash)
 }
 
-export function signOut(session: Session, accountId: number) {
-  const conn = db()
-  conn.prepare('delete from session_accounts where token_hash = ? and account_id = ?').run(session.hash, accountId)
-  if (!conn.prepare('select 1 from session_accounts where account_id = ?').get(accountId)) {
-    conn.prepare('delete from senders where account_id = ?').run(accountId)
-    conn.prepare('delete from accounts where id = ?').run(accountId)
+export async function signOut(session: Session, accountId: number) {
+  await run('delete from session_accounts where token_hash = ? and account_id = ?', session.hash, accountId)
+  if (!(await get('select 1 from session_accounts where account_id = ?', accountId))) {
+    await batch([
+      ['delete from senders where account_id = ?', [accountId]],
+      ['delete from accounts where id = ?', [accountId]],
+    ])
   }
   const left = session.accountIds.filter((id) => id !== accountId).length
-  if (!left) conn.prepare('delete from sessions where token_hash = ?').run(session.hash)
+  if (!left) await run('delete from sessions where token_hash = ?', session.hash)
   return left
 }
 

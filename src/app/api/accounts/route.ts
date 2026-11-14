@@ -56,7 +56,7 @@ export async function POST(req: NextRequest) {
   }
   failures.delete(email)
 
-  const id = saveAccount({
+  const id = await saveAccount({
     email,
     provider,
     auth: 'password',
@@ -68,6 +68,6 @@ export async function POST(req: NextRequest) {
     secret: encrypt(password),
   })
   const res = NextResponse.json({ id })
-  res.cookies.set(sessionCookie(signIn(req, id)))
+  res.cookies.set(sessionCookie(await signIn(req, id)))
   return res
 }

@@ -1,6 +1,7 @@
 import type { FetchMessageObject } from 'imapflow'
 import { getDomain } from 'tldts'
-import { db, type Account } from './db'
+import type { InValue } from '@libsql/client'
+import { all, batch, type Account } from './db'
 import { mailFolders, openImap } from './mail'
 import { isBulk, isOneClickPost, parseHeaders } from './headers'
 import { mergeMonths, monthKey, type Months } from './stats'
@@ -23,7 +24,7 @@ type Found = {
   post: boolean
 }
 
-type Row = { id: number; total: number; opened: number; first_at: number; last_at: number; months: string }
+type Row = { id: number; address: string; total: number; opened: number; first_at: number; last_at: number; months: string }
 
 const running = new Set<number>()
 
@@ -71,7 +72,7 @@ async function scan(account: Account, deadline: number): Promise<{ done: boolean
           }
           folder.uid = batch[batch.length - 1]
           state.scanned += batch.length
-          save(account, found, state)
+          await save(account, found, state)
           i += batch.length
         }
         remaining += uids.length - i
@@ -84,15 +85,19 @@ async function scan(account: Account, deadline: number): Promise<{ done: boolean
   }
 
   if (reset) {
-    db().prepare(`update senders set total = 0, opened = 0, months = '{}', first_at = 9e15, last_at = 0 where account_id = ?`).run(account.id)
-    db().prepare('update accounts set scan_state = null where id = ?').run(account.id)
+    await batch([
+      [`update senders set total = 0, opened = 0, months = '{}', first_at = 9e15, last_at = 0 where account_id = ?`, [account.id]],
+      ['update accounts set scan_state = null where id = ?', [account.id]],
+    ])
     return scan({ ...account, scan_state: null }, deadline)
   }
 
   const done = remaining === 0
   if (done) {
-    db().prepare('update accounts set scan_state = ?, scanned_at = ? where id = ?').run(JSON.stringify({ ...state, scanned: 0 }), Date.now(), account.id)
-    db().prepare('delete from senders where account_id = ? and total = 0').run(account.id)
+    await batch([
+      ['update accounts set scan_state = ?, scanned_at = ? where id = ?', [JSON.stringify({ ...state, scanned: 0 }), Date.now(), account.id]],
+      ['delete from senders where account_id = ? and total = 0', [account.id]],
+    ])
   }
   return { done, scanned: state.scanned, total: state.scanned + remaining }
 }
@@ -128,39 +133,44 @@ function collect(found: Map<string, Found>, message: FetchMessageObject, folder:
   }
 }
 
-function save(account: Account, found: Map<string, Found>, state: State) {
-  const conn = db()
-  conn.transaction(() => {
-    for (const [address, s] of found) {
-      const row = conn.prepare('select id, total, opened, first_at, last_at, months from senders where account_id = ? and address = ?').get(account.id, address) as
-        | Row
-        | undefined
+async function save(account: Account, found: Map<string, Found>, state: State) {
+  const addresses = [...found.keys()]
+  const existing = addresses.length
+    ? await all<Row>(
+        `select id, address, total, opened, first_at, last_at, months from senders where account_id = ? and address in (${addresses.map(() => '?').join(',')})`,
+        account.id,
+        ...addresses,
+      )
+    : []
+  const rows = new Map(existing.map((r) => [r.address, r]))
+  const writes: [string, InValue[]][] = []
 
-      if (!row) {
-        const domain = address.split('@')[1]
-        conn
-          .prepare(
-            `insert into senders (account_id, address, name, domain, total, opened, first_at, last_at, months, latest_folder, latest_uid, unsub_header, unsub_post)
-             values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
-          )
-          .run(account.id, address, s.name || null, getDomain(domain) ?? domain, s.total, s.opened, s.first, s.last, JSON.stringify(s.months), s.folder, s.uid, s.unsub, s.post ? 1 : 0)
-        continue
-      }
-
-      const months = JSON.stringify(mergeMonths(JSON.parse(row.months), s.months))
-      conn
-        .prepare('update senders set total = ?, opened = ?, first_at = ?, last_at = ?, months = ? where id = ?')
-        .run(row.total + s.total, row.opened + s.opened, Math.min(row.first_at, s.first), Math.max(row.last_at, s.last), months, row.id)
-      if (s.last >= row.last_at) {
-        conn
-          .prepare(
-            `update senders set name = coalesce(?, name), latest_folder = ?, latest_uid = ?, unsub_header = ?, unsub_post = ?,
-             auto_failed = case when coalesce(unsub_header, '') = coalesce(?, '') then auto_failed else 0 end
-             where id = ?`,
-          )
-          .run(s.name || null, s.folder, s.uid, s.unsub, s.post ? 1 : 0, s.unsub, row.id)
-      }
+  for (const [address, s] of found) {
+    const row = rows.get(address)
+    if (!row) {
+      const domain = address.split('@')[1]
+      writes.push([
+        `insert into senders (account_id, address, name, domain, total, opened, first_at, last_at, months, latest_folder, latest_uid, unsub_header, unsub_post)
+         values (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`,
+        [account.id, address, s.name || null, getDomain(domain) ?? domain, s.total, s.opened, s.first, s.last, JSON.stringify(s.months), s.folder, s.uid, s.unsub, s.post ? 1 : 0],
+      ])
+      continue
     }
-    conn.prepare('update accounts set scan_state = ? where id = ?').run(JSON.stringify(state), account.id)
-  })()
+
+    const months = JSON.stringify(mergeMonths(JSON.parse(row.months), s.months))
+    writes.push([
+      'update senders set total = ?, opened = ?, first_at = ?, last_at = ?, months = ? where id = ?',
+      [row.total + s.total, row.opened + s.opened, Math.min(row.first_at, s.first), Math.max(row.last_at, s.last), months, row.id],
+    ])
+    if (s.last >= row.last_at) {
+      writes.push([
+        `update senders set name = coalesce(?, name), latest_folder = ?, latest_uid = ?, unsub_header = ?, unsub_post = ?,
+         auto_failed = case when coalesce(unsub_header, '') = coalesce(?, '') then auto_failed else 0 end
+         where id = ?`,
+        [s.name || null, s.folder, s.uid, s.unsub, s.post ? 1 : 0, s.unsub, row.id],
+      ])
+    }
+  }
+  writes.push(['update accounts set scan_state = ? where id = ?', [JSON.stringify(state), account.id]])
+  await batch(writes)
 }

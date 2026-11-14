@@ -36,7 +36,7 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/oauth/[provi
 
   const p = providers[provider]
   const consumerOutlook = provider === 'microsoft' && /^(outlook|hotmail|live|msn|passport)\./.test(email.split('@')[1])
-  const id = saveAccount({
+  const id = await saveAccount({
     email,
     provider,
     auth: 'oauth',
@@ -51,6 +51,6 @@ export async function GET(req: NextRequest, ctx: RouteContext<'/api/oauth/[provi
   })
 
   const res = done(`/?account=${id}`)
-  res.cookies.set(sessionCookie(signIn(req, id)))
+  res.cookies.set(sessionCookie(await signIn(req, id)))
   return res
 }

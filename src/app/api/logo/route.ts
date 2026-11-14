@@ -23,7 +23,7 @@ const signInLogos = new Set(['google.com', 'icloud.com', 'outlook.com', 'yahoo.c
 
 export async function GET(req: NextRequest) {
   const domain = req.nextUrl.searchParams.get('d')?.toLowerCase() ?? ''
-  if (!signInLogos.has(domain) && !apiSession(req)) return new Response(null, { status: 401 })
+  if (!signInLogos.has(domain) && !(await apiSession(req))) return new Response(null, { status: 401 })
   if (!/^[a-z0-9.-]+\.[a-z]{2,}$/.test(domain)) return new Response(null, { status: 400 })
 
   if (!cache.has(domain)) {

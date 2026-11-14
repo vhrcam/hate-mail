@@ -5,16 +5,16 @@ import { scanAccount } from '@/lib/scan'
 import { apiSession, notSignedIn } from '@/lib/session'
 
 export async function POST(req: NextRequest, ctx: RouteContext<'/api/accounts/[id]/scan'>) {
-  const session = apiSession(req)
+  const session = await apiSession(req)
   const id = Number((await ctx.params).id)
   if (!session || !session.accountIds.includes(id)) return notSignedIn()
-  const account = getAccount(id)
+  const account = await getAccount(id)
   if (!account) return notSignedIn()
   if (account.needs_reconnect) return Response.json({ error: 'Reconnect this account to keep scanning.', reconnect: true }, { status: 409 })
 
   try {
     return Response.json(await scanAccount(account))
   } catch (e) {
-    return Response.json({ error: errorText(e), reconnect: !!getAccount(id)?.needs_reconnect }, { status: 502 })
+    return Response.json({ error: errorText(e), reconnect: !!(await getAccount(id))?.needs_reconnect }, { status: 502 })
   }
 }

@@ -5,9 +5,9 @@ import { apiSession, notSignedIn } from '@/lib/session'
 import { findLink } from '@/lib/unsubscribe'
 
 export async function POST(req: NextRequest) {
-  const session = apiSession(req)
+  const session = await apiSession(req)
   const id = Number((await req.json()).id)
-  const account = senderAccount(id)
+  const account = await senderAccount(id)
   if (!session || !account || !session.accountIds.includes(account)) return notSignedIn()
 
   try {

@@ -3,7 +3,7 @@ import { apiSession, notSignedIn } from '@/lib/session'
 import { unsubscribe } from '@/lib/unsubscribe'
 
 export async function POST(req: NextRequest) {
-  const session = apiSession(req)
+  const session = await apiSession(req)
   const body = await req.json()
   const account = Number(body.account)
   if (!session || !session.accountIds.includes(account)) return notSignedIn()

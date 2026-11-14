@@ -1,4 +1,4 @@
-import { db } from './db'
+import { all, get } from './db'
 import { unsubscribeLinks } from './headers'
 import { yearStats } from './stats'
 
@@ -38,16 +38,12 @@ export function rowMethod(row: SenderRow) {
   return { kind: 'find' as const }
 }
 
-export function senderRows(accountId: number, ids?: number[]) {
-  const rows = db()
-    .prepare('select s.*, a.smtp_host from senders s join accounts a on a.id = s.account_id where s.account_id = ? and s.total > 0')
-    .all(accountId) as SenderRow[]
+export async function senderRows(accountId: number, ids?: number[]) {
+  const rows = await all<SenderRow>('select s.*, a.smtp_host from senders s join accounts a on a.id = s.account_id where s.account_id = ? and s.total > 0', accountId)
   return ids ? rows.filter((r) => ids.includes(r.id)) : rows
 }
 
-export function senderAccount(id: number) {
-  return (db().prepare('select account_id from senders where id = ?').get(id) as { account_id: number } | undefined)?.account_id
-}
+export const senderAccount = async (id: number) => (await get<{ account_id: number }>('select account_id from senders where id = ?', id))?.account_id
 
 function summarize(row: SenderRow) {
   const year = yearStats(JSON.parse(row.months), row.first_at)
@@ -69,4 +65,4 @@ function summarize(row: SenderRow) {
   }
 }
 
-export const listSenders = (accountId: number, ids?: number[]) => senderRows(accountId, ids).map(summarize)
+export const listSenders = async (accountId: number, ids?: number[]) => (await senderRows(accountId, ids)).map(summarize)
