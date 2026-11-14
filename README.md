@@ -15,7 +15,7 @@ There's no Hate Mail password. Pick your email provider from the list and sign i
 - **Other email:** type your address and Hate Mail looks up the server settings for your domain. School and work accounts that run on Google or Microsoft go to the right sign-in. You can change the settings under Server settings.
 - **Proton Mail** can't connect. Proton only lets other apps in through Proton Bridge, a desktop app.
 
-The menu at the top right shows the account you're looking at. Open it to switch to another one, add another account, or sign out of the one you're on. Signing out makes Hate Mail forget that account and its senders on that browser. Nothing in your mailbox changes.
+The menu at the top right shows the account you're looking at. Open it to switch to another one, add another account, or sign out of the one you're on. Signing out makes Hate Mail forget your password or sign-in on that browser. Your sender list is kept for 90 days, so if you sign back in, Hate Mail picks up where you left off and only checks new mail. After 90 days without a visit, the list is deleted too. Nothing in your mailbox changes.
 
 ## What it does
 
@@ -118,7 +118,7 @@ The live site runs on [Vercel](https://vercel.com). Vercel can't keep files betw
 npm test
 ```
 
-They cover header parsing, finding unsubscribe links, the monthly email counts, provider detection, and the checks that keep unsubscribe requests off private addresses.
+They cover header parsing, finding unsubscribe links, the monthly email counts, provider detection, the checks that keep unsubscribe requests off private addresses, and what signing out keeps and deletes.
 
 ## Built with
 

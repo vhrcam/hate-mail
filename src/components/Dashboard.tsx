@@ -498,7 +498,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
           <div role="dialog" aria-modal="true" className="w-full max-w-[17rem] overflow-hidden rounded-2xl bg-field/95 text-center shadow-2xl ring-1 ring-white/5 backdrop-blur-xl" onClick={(e) => e.stopPropagation()}>
             <div className="px-4 pt-5 pb-4">
               <h2 className="font-medium">Sign out of {account.email}?</h2>
-              <p className="mt-1 text-sm text-muted">Hate Mail forgets this account and its senders on this device. Nothing in your mailbox changes.</p>
+              <p className="mt-1 text-sm text-muted">Hate Mail forgets your sign-in on this device. If you come back within 90 days, your senders will still be here. Nothing in your mailbox changes.</p>
             </div>
             <div className="grid grid-cols-2 divide-x divide-line border-t border-line">
               <button onClick={() => setLeaving(false)} className="py-3 text-accent-soft hover:bg-white/5">
