@@ -126,7 +126,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
   )
 
   const open = useCallback(
-    async (id: number) => {
+    async (id: number, fresh = false) => {
       const mine = ++run.current
       const data = await load(id, true)
       if (!data || run.current !== mine) return
@@ -135,7 +135,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
       } catch {}
       window.history.replaceState(null, '', `/?account=${data.account}`)
       const a = data.accounts.find((x) => x.id === data.account)
-      if (a && !a.needsReconnect && (!a.scannedAt || Date.now() - a.scannedAt > STALE)) await runScan(a, mine)
+      if (a && !a.needsReconnect && (fresh || !a.scannedAt || Date.now() - a.scannedAt > STALE)) await runScan(a, mine)
     },
     [load, runScan],
   )
@@ -146,7 +146,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
       try {
         saved = Number(localStorage.getItem('hm-account')) || 0
       } catch {}
-      await open(initialAccount || saved)
+      await open(initialAccount || saved, true)
     }
     start()
     const runs = run
