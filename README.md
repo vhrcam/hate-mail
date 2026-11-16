@@ -34,7 +34,7 @@ The menu at the top right shows the account you're looking at. Open it to switch
 - **Still sending.** If a sender keeps emailing more than 14 days after you unsubscribed, it gets a Still sending tag and an Unsubscribe again button. That button takes you to their unsubscribe page this time. US law gives senders 10 business days.
 - **Sort and filter.** Sort by most emails, oldest first, newest first, or A–Z. Filter by Not opened in a year or One-click, or search by name or address.
 - **Unsubscribed senders** dim in place, so the list doesn't jump while you work down it. They move to the bottom the next time you open Hate Mail.
-- **Scanning.** The first scan goes through all of your mail, 500 emails at a time, with a progress bar. After that, Hate Mail only checks new mail. It checks when you open it (if the last check was over 15 minutes ago) and when you press Refresh.
+- **Scanning.** The first scan goes through all of your mail, 500 emails at a time, with a progress bar. After that, Hate Mail only checks new mail. It checks every time you open or reload it, and when you switch to an account it hasn't checked in the last 15 minutes.
 - **Works on phones.** The boxes stack and the button moves under each sender.
 
 ## Good to know

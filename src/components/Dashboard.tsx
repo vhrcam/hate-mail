@@ -264,10 +264,6 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
     }
   }
 
-  function refresh() {
-    if (account) runScan(account, ++run.current)
-  }
-
   async function signOut() {
     setLeaving(false)
     const res = await fetch(`/api/accounts/${current}`, { method: 'DELETE' })
@@ -343,12 +339,6 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                 </option>
               ))}
             </select>
-            <button onClick={refresh} disabled={!!scan || !account} aria-label="Refresh" title="Refresh" className="input w-auto shrink-0 px-2.5 py-2.5 text-muted hover:text-ink disabled:opacity-40">
-              <svg aria-hidden viewBox="0 0 24 24" className={`h-5 w-5 ${scan ? 'animate-spin' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <path d="M20 12a8 8 0 1 1-2.34-5.66" />
-                <path d="M20 4v5h-5" />
-              </svg>
-            </button>
           </div>
 
           <div className="mt-3 inline-flex max-w-full rounded-xl bg-field p-1">
