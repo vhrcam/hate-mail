@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
-import Chevron from './Chevron'
+import Icon from './Icon'
 
 type Setup = {
   id: string
@@ -114,12 +114,12 @@ export default function ConnectFlow({
         <div className={`flex items-center justify-between ${choice ? 'mb-4' : 'mt-10'}`}>
           {choice ? (
             <button onClick={back} className="flex items-center gap-1 text-muted transition hover:text-ink">
-              <Chevron dir="left" />
+              <Icon name="left" className="-ml-1 h-4 w-4" />
               Back
             </button>
           ) : (
             <Link href="/" className="flex items-center gap-1 text-muted transition hover:text-ink">
-              <Chevron dir="left" />
+              <Icon name="left" className="-ml-1 h-4 w-4" />
               Your senders
             </Link>
           )}
@@ -147,7 +147,7 @@ export default function ConnectFlow({
                 <ProviderIcon domain={c.domain} />
                 <span className="flex-1 font-medium">{c.name}</span>
                 <span className="text-faint">
-                  <Chevron dir="right" />
+                  <Icon name="right" />
                 </span>
               </>
             )

@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
-import Chevron from './Chevron'
+import Icon from './Icon'
 
 type Sender = {
   id: number
@@ -291,7 +291,7 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
               {account && <Initial text={account.email} />}
               <span className="truncate">{account?.email ?? 'Accounts'}</span>
               <span className="text-muted">
-                <Chevron dir="down" />
+                <Icon name="down" />
               </span>
             </button>
             {switcher && (
