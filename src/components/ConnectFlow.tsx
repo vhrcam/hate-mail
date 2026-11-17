@@ -3,6 +3,7 @@
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import Chevron from './Chevron'
 
 type Setup = {
   id: string
@@ -113,12 +114,12 @@ export default function ConnectFlow({
         <div className={`flex items-center justify-between ${choice ? 'mb-4' : 'mt-10'}`}>
           {choice ? (
             <button onClick={back} className="flex items-center gap-1 text-muted transition hover:text-ink">
-              <Chevron left />
+              <Chevron dir="left" />
               Back
             </button>
           ) : (
             <Link href="/" className="flex items-center gap-1 text-muted transition hover:text-ink">
-              <Chevron left />
+              <Chevron dir="left" />
               Your senders
             </Link>
           )}
@@ -146,7 +147,7 @@ export default function ConnectFlow({
                 <ProviderIcon domain={c.domain} />
                 <span className="flex-1 font-medium">{c.name}</span>
                 <span className="text-faint">
-                  <Chevron />
+                  <Chevron dir="right" />
                 </span>
               </>
             )
@@ -315,14 +316,6 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="w-28 shrink-0 text-sm">{label}</span>
       {children}
     </label>
-  )
-}
-
-function Chevron({ left }: { left?: boolean }) {
-  return (
-    <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 ${left ? '-ml-1' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-      <path d={left ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
-    </svg>
   )
 }
 
