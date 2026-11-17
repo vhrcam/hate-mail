@@ -499,10 +499,10 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
               <p className="mt-1 text-sm text-muted">Hate Mail forgets your sign-in on this device. If you come back within 90 days, your senders will still be here. Nothing in your mailbox changes.</p>
             </div>
             <div className="grid grid-cols-2 divide-x divide-line border-t border-line">
-              <button onClick={() => setLeaving(false)} className="py-3 text-accent-soft hover:bg-white/5">
+              <button onClick={() => setLeaving(false)} className="py-3 text-muted transition hover:bg-white/5 hover:text-ink">
                 Cancel
               </button>
-              <button onClick={signOut} autoFocus className="py-3 font-medium text-accent-soft hover:bg-white/5">
+              <button onClick={signOut} autoFocus className="py-3 font-medium text-muted transition hover:bg-white/5 hover:text-ink">
                 Sign Out
               </button>
             </div>
