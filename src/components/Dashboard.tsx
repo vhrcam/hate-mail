@@ -449,9 +449,9 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                       Unsubscribed
                     </span>
                   ) : (
-                    <button disabled={working} onClick={() => unsubscribe(s)} className="pill">
+                    <button disabled={working} onClick={() => unsubscribe(s)} className="pill inline-flex items-center gap-1">
                       {working ? 'Working…' : s.status === 'still-sending' ? 'Unsubscribe again' : 'Unsubscribe'}
-                      {!working && s.method !== 'auto' ? ' ↗' : ''}
+                      {!working && s.method !== 'auto' && <Icon name="external" className="h-3.5 w-3.5" />}
                     </button>
                   )}
                 </div>

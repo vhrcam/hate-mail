@@ -281,8 +281,9 @@ function PasswordForm({
         </ol>
       )}
       {setup.helpUrl && (
-        <a href={setup.helpUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-block text-sm text-accent-soft hover:brightness-110">
-          Get an app password ↗
+        <a href={setup.helpUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm text-accent-soft hover:brightness-110">
+          Get an app password
+          <Icon name="external" className="h-3.5 w-3.5" />
         </a>
       )}
 
