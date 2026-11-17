@@ -112,12 +112,14 @@ export default function ConnectFlow({
       {(choice || hasAccounts) && (
         <div className={`flex items-center justify-between ${choice ? 'mb-4' : 'mt-10'}`}>
           {choice ? (
-            <button onClick={back} className="text-muted transition hover:text-ink">
-              ‹ Back
+            <button onClick={back} className="flex items-center gap-1 text-muted transition hover:text-ink">
+              <Chevron left />
+              Back
             </button>
           ) : (
-            <Link href="/" className="text-muted transition hover:text-ink">
-              ‹ Your senders
+            <Link href="/" className="flex items-center gap-1 text-muted transition hover:text-ink">
+              <Chevron left />
+              Your senders
             </Link>
           )}
           {action && (
@@ -143,8 +145,8 @@ export default function ConnectFlow({
               <>
                 <ProviderIcon domain={c.domain} />
                 <span className="flex-1 font-medium">{c.name}</span>
-                <span aria-hidden className="text-xl leading-none text-faint">
-                  ›
+                <span className="text-faint">
+                  <Chevron />
                 </span>
               </>
             )
@@ -313,6 +315,14 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="w-28 shrink-0 text-sm">{label}</span>
       {children}
     </label>
+  )
+}
+
+function Chevron({ left }: { left?: boolean }) {
+  return (
+    <svg aria-hidden viewBox="0 0 24 24" className={`h-4 w-4 shrink-0 ${left ? '-ml-1' : ''}`} fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+      <path d={left ? 'M15 5l-7 7 7 7' : 'M9 5l7 7-7 7'} />
+    </svg>
   )
 }
 
