@@ -27,7 +27,7 @@ body {
 
 @layer components {
   .input {
-    @apply w-full rounded-xl bg-field px-3.5 py-2.5 text-ink outline-none ring-1 ring-transparent transition placeholder:text-faint focus:ring-accent/70;
+    @apply w-full rounded-xl bg-field px-3.5 py-2.5 text-ink outline-none transition placeholder:text-faint;
   }
 
   .select {
