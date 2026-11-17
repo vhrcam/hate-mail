@@ -110,7 +110,7 @@ export default function ConnectFlow({
       <header className="px-5 py-4 text-lg font-semibold tracking-tight sm:px-6">Hate Mail</header>
       <main className="mx-auto max-w-md px-4 pb-16 pt-4 sm:pt-10">
       {(choice || hasAccounts) && (
-        <div className="mb-4 flex items-center justify-between">
+        <div className={`flex items-center justify-between ${choice ? 'mb-4' : 'mt-10'}`}>
           {choice ? (
             <button onClick={back} className="text-accent-soft hover:brightness-110">
               ‹ Back
@@ -129,13 +129,11 @@ export default function ConnectFlow({
       )}
 
       {picked && <h1 className="text-3xl font-semibold tracking-tight">{picked.name}</h1>}
-      <p className={picked ? 'mt-2 text-muted' : 'text-muted'}>
-        {picked
-          ? 'Hate Mail looks at who your emails are from and never saves what they say.'
-          : hasAccounts
-            ? 'Connect another email to switch between them.'
-            : 'Sign in with your email to see every mailing list you’re on.'}
-      </p>
+      {(picked || !hasAccounts) && (
+        <p className={picked ? 'mt-2 text-muted' : 'text-muted'}>
+          {picked ? 'Hate Mail looks at who your emails are from and never saves what they say.' : 'Sign in with your email to see every mailing list you’re on.'}
+        </p>
+      )}
 
       {!choice && (
         <div className="mt-5 divide-y divide-line overflow-hidden rounded-2xl bg-card">
