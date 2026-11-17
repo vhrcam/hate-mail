@@ -112,11 +112,11 @@ export default function ConnectFlow({
       {(choice || hasAccounts) && (
         <div className={`flex items-center justify-between ${choice ? 'mb-4' : 'mt-10'}`}>
           {choice ? (
-            <button onClick={back} className="text-accent-soft hover:brightness-110">
+            <button onClick={back} className="text-muted transition hover:text-ink">
               ‹ Back
             </button>
           ) : (
-            <Link href="/" className="text-accent-soft hover:brightness-110">
+            <Link href="/" className="text-muted transition hover:text-ink">
               ‹ Your senders
             </Link>
           )}
