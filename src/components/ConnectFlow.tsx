@@ -124,7 +124,7 @@ export default function ConnectFlow({
             </Link>
           )}
           {action && (
-            <button type="submit" form={action.form} disabled={busy} className="font-medium text-accent-soft hover:brightness-110 disabled:opacity-50">
+            <button type="submit" form={action.form} disabled={busy} className="font-medium text-muted transition hover:text-ink disabled:opacity-50">
               {action.label}
             </button>
           )}
@@ -228,7 +228,7 @@ function OtherAccount({
           <p className="mt-5 rounded-2xl bg-card p-4 text-muted">{label} sign-in isn’t set up on this server yet.</p>
         )}
         {detected.appPassword && (
-          <button onClick={onUsePassword} className="mt-4 block text-accent-soft hover:brightness-110">
+          <button onClick={onUsePassword} className="mt-4 block text-muted transition hover:text-ink">
             Use an app password instead
           </button>
         )}
@@ -281,7 +281,7 @@ function PasswordForm({
         </ol>
       )}
       {setup.helpUrl && (
-        <a href={setup.helpUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm text-accent-soft hover:brightness-110">
+        <a href={setup.helpUrl} target="_blank" rel="noopener noreferrer" className="mt-3 inline-flex items-center gap-1 text-sm text-muted transition hover:text-ink">
           Get an app password
           <Icon name="external" className="h-3.5 w-3.5" />
         </a>
