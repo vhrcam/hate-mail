@@ -302,7 +302,11 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
                       <Initial text={a.email} />
                       <span className="min-w-0 flex-1 truncate">{a.email}</span>
                       {a.needsReconnect && <span className="shrink-0 text-xs text-amber">Reconnect</span>}
-                      {a.id === current && <span className="shrink-0 text-accent-soft">✓</span>}
+                      {a.id === current && (
+                        <span className="text-muted">
+                          <Icon name="check" />
+                        </span>
+                      )}
                     </button>
                   ))}
                 </div>
@@ -440,7 +444,10 @@ export default function Dashboard({ initialAccount }: { initialAccount: number }
 
                 <div className="order-last w-full pl-[5.375rem] md:order-none md:w-44 md:shrink-0 md:pl-0 md:text-right">
                   {done ? (
-                    <span className="px-1 text-sm text-muted">✓ Unsubscribed</span>
+                    <span className="inline-flex items-center gap-1.5 px-1 text-sm text-muted">
+                      <Icon name="check" className="h-3.5 w-3.5" />
+                      Unsubscribed
+                    </span>
                   ) : (
                     <button disabled={working} onClick={() => unsubscribe(s)} className="pill">
                       {working ? 'Working…' : s.status === 'still-sending' ? 'Unsubscribe again' : 'Unsubscribe'}
