@@ -4,6 +4,7 @@ import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
 import Icon from './Icon'
+import ProviderIcon from './ProviderIcon'
 
 type Setup = {
   id: string
@@ -32,12 +33,12 @@ const errors: Record<string, string> = {
 }
 
 const choices = [
-  { id: 'google', name: 'Google', domain: 'google.com' },
-  { id: 'icloud', name: 'iCloud', domain: 'icloud.com' },
-  { id: 'microsoft', name: 'Outlook', domain: 'outlook.com' },
-  { id: 'yahoo', name: 'Yahoo', domain: 'yahoo.com' },
-  { id: 'aol', name: 'AOL', domain: 'aol.com' },
-  { id: 'other', name: 'Other email', domain: '' },
+  { id: 'google', name: 'Google' },
+  { id: 'icloud', name: 'iCloud' },
+  { id: 'microsoft', name: 'Outlook' },
+  { id: 'yahoo', name: 'Yahoo' },
+  { id: 'aol', name: 'AOL' },
+  { id: 'other', name: 'Other email' },
 ]
 
 const placeholders: Record<string, string> = { google: 'you@gmail.com', icloud: 'you@icloud.com', yahoo: 'you@yahoo.com', aol: 'you@aol.com' }
@@ -144,7 +145,7 @@ export default function ConnectFlow({
             const oauth = (c.id === 'google' && ready.google) || (c.id === 'microsoft' && ready.microsoft)
             const row = (
               <>
-                <ProviderIcon domain={c.domain} />
+                <ProviderIcon id={c.id} />
                 <span className="flex-1 font-medium">{c.name}</span>
                 <span className="text-faint">
                   <Icon name="right" />
@@ -317,22 +318,5 @@ function Field({ label, children }: { label: string; children: React.ReactNode }
       <span className="w-28 shrink-0 text-sm">{label}</span>
       {children}
     </label>
-  )
-}
-
-function ProviderIcon({ domain }: { domain: string }) {
-  if (!domain) {
-    return (
-      <span aria-hidden className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg bg-raised text-muted">
-        <svg viewBox="0 0 24 24" className="h-4.5 w-4.5" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-          <rect x="3" y="5" width="18" height="14" rx="2" />
-          <path d="m3 7 9 6 9-6" />
-        </svg>
-      </span>
-    )
-  }
-  return (
-    // eslint-disable-next-line @next/next/no-img-element
-    <img src={`/api/logo?d=${domain}`} alt="" className="h-8 w-8 shrink-0 rounded-lg bg-white object-contain p-1" />
   )
 }
